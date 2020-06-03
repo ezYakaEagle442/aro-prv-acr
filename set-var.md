@@ -41,6 +41,21 @@ echo "apiserver visibility is : " $apiserver_visibility
 ingress_visibility="Private"
 echo "ingress visibility is : " $ingress_visibility 
 
+acr_registry_name="acr${appName,,}"
+echo "ACR registry Name :" $acr_registry_name
+
+acr_analytics_workspace="acr-wrk-${appName,,}"
+echo "ACR Log Analytics Workspace Name:" $acr_analytics_workspace
+
+acr_private_dns_link_name="prv-lnk-acr-${appName,,}"
+echo "ACR private-dns link Name :" $acr_private_dns_link_name
+
+acr_bastion_private_dns_link_name="prv-lnk-acr-bastion-${appName,,}"
+echo "ACR private-dns link Name for Bastion :" $acr_bastion_private_dns_link_name
+
+acr_private_endpoint_name="prv-ep-acr-${appName,,}"
+echo "ACR private-endpoint Name :" $acr_private_endpoint_name
+
 ssh_passphrase="<your secret>"
 ssh_key="${appName}-key" # id_rsa
 
@@ -258,12 +273,6 @@ echo "Analytics Workspace Name :" $analytics_workspace_name
 
 analytics_workspace_template="deployworkspacetemplate.json"
 echo "Analytics Workspace template file name :" $analytics_workspace_template
-
-acr_registry_name="acr${appName,,}"
-echo "ACR registry Name :" $acr_registry_name
-
-acr_analytics_workspace="acr-wrk-${appName,,}"
-echo "ACR Log Analytics Workspace Name:" $acr_analytics_workspace
 
 app_insights_name="appi-${appName}"
 echo "Application Insights Name :" $app_insights_name
