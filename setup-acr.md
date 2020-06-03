@@ -164,6 +164,12 @@ Preview [Limitations](https://docs.microsoft.com/en-us/azure/container-registry/
 
 az acr update --name $acr_registry_name --default-action Deny
 az acr network-rule add --name $acr_registry_name --subnet $worker_subnet_id
+
+# myip=$(dig +short myip.opendns.com @resolver1.opendns.com)
+# export AUTHORIZED_IP_RANGE="176.134.171.0/24"
+# echo "IP range allowed to call ACR : " $AUTHORIZED_IP_RANGE
+# az acr network-rule add --name $acr_registry_name --ip-address $AUTHORIZED_IP_RANGE
+az acr update --name $acr_registry_name --public-network-enabled false
 az acr network-rule list --name $acr_registry_name
 
 # Verify access to the registry
