@@ -150,14 +150,14 @@ nslookup $acr_private
 
 ```
 
-## Setup ACR Firewall : To be studied
+## Setup ACR Firewall
 By default, an Azure container registry allows connections from hosts on any network. To limit access to a selected network, change the default action to deny access. Add a network rule to your registry that allows access from the VM's subnet.
 
 [https://docs.microsoft.com/en-us/azure/container-registry/container-registry-vnet](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-vnet)
 
 Preview [Limitations](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-vnet#preview-limitations) :
 - Only a Premium container registry can be configured with network access rules.
-- Only an Azure Kubernetes Service cluster or Azure virtual machine can be used as a host to access a container registry in a VNet
+- Only an ARO cluster or Azure virtual machine can be used as a host to access a container registry in a VNet
 - ACR Tasks operations aren't currently supported in a container registry accessed in a virtual network.
 
 ```sh
