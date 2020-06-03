@@ -38,6 +38,10 @@ echo "ARO Ingress Controller IP: " $ing_ctl_ip
 aro_spn=$(az aro show -n $cluster_name -g $rg_name --query 'servicePrincipalProfile.clientId' -o tsv)
 echo "ARO Service Principal Name: " $aro_spn
 
+
+managed_rg=$(az aro show -n $cluster_name -g $rg_name --query 'clusterProfile.resourceGroupId' -o tsv)
+echo "ARO Managed Resource Group : " $managed_rg
+
 cat ~/.azure/accessTokens.json
 # You can have a look at the App. Registrations in the portal at https://ms.portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps
 
@@ -114,7 +118,7 @@ oc get roles --all-namespaces
 oc get rolebindings --all-namespaces
 oc get ingresses  --all-namespaces
 
-url -k $aro_api_server_url/api/v1/namespaces -H "Authorization: Bearer $token_secret_value" -H 'Accept: application/json'
-url -k $aro_api_server_url/apis/user.openshift.io/v1/users/~ -H "Authorization: Bearer $token_secret_value" -H 'Accept: application/json'
+curl -k $aro_api_server_url/api/v1/namespaces -H "Authorization: Bearer $token_secret_value" -H 'Accept: application/json'
+curl -k $aro_api_server_url/apis/user.openshift.io/v1/users/~ -H "Authorization: Bearer $token_secret_value" -H 'Accept: application/json'
 
 ```
