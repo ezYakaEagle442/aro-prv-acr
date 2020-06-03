@@ -42,6 +42,45 @@ echo "Internal Load BalancerLB Subnet Id :" $ilb_subnet_id
 
 ```
 
+## Setup Bastion
+
+
+### Create RG
+```sh
+az group create --name $rg_bastion_name --location $location
+```
+
+### Prepare pre-requisites
+[Azure Bastion](https://docs.microsoft.com/en-us/azure/bastion/bastion-overview) allows you to log into VMs in the virtual network through SSH or remote desktop protocol (RDP) without exposing the VMs directly to the internet. Use Bastion to manage the VMs in the virtual network.
+
+RDP and SSH directly in Azure portal: You can directly get to the RDP and SSH session directly in the Azure portal using a single click seamless experience.
+
+Remote Session over SSL and firewall traversal for RDP/SSH: Azure Bastion uses an HTML5 based web client that is automatically streamed to your local device, so that you get your RDP/SSH session over SSL on port 443 enabling you to traverse corporate firewalls securely.
+
+No hassle of managing NSGs: Azure Bastion is a fully managed platform PaaS service from Azure that is hardened internally to provide you secure RDP/SSH connectivity. You don't need to apply any NSGs on Azure Bastion subnet.
+
+[https://docs.microsoft.com/en-us/cli/azure/network/bastion?view=azure-cli-latest#az-network-bastion-create](https://docs.microsoft.com/en-us/cli/azure/network/bastion?view=azure-cli-latest#az-network-bastion-create)
+The SKU of the public IP must be Standard.
+Name of the virtual network. **It must have a subnet called AzureBastionSubnet.**
+
+```sh
+# The gateway provides connectivity between the routers in the on-premises network and the virtual network. The gateway is placed in its own subnet. Azure only allows VPN and ExpressRoute gateways to be deployed into these subnets.
+# https://docs.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-vpn-faq#do-i-need-a-gatewaysubnet
+az network vnet create --name $vnet_bastion_name -g $rg_bastion_name --address-prefixes 192.168.0.0/21 --location $location
+az network vnet subnet create --name $subnet_bastion_name --address-prefixes 192.168.1.0/24 --vnet-name $vnet_bastion_name -g $rg_bastion_name
+az network vnet subnet create --name ManagementSubnet --address-prefixes 192.168.2.0/24 --vnet-name $vnet_bastion_name -g $rg_bastion_name
+az network vnet subnet create --name GatewaySubnet --address-prefixes 192.168.3.0/24 --vnet-name $vnet_bastion_name -g $rg_bastion_name
+
+bastion_vnet_id=$(az network vnet show --name $vnet_bastion_name -g $rg_bastion_name --query id -o tsv)
+echo "Bastion VNet Id :" $bastion_vnet_id	
+
+bastion_subnet_id=$(az network vnet subnet show --name $subnet_bastion_name --vnet-name $vnet_bastion_name -g $rg_bastion_name --query id -o tsv)
+echo "Bastion Subnet Id :" $bastion_subnet_id	
+
+# https://github.com/Azure/azure-quickstart-templates/tree/master/101-azure-bastion
+
+```
+
 
 ### Setup NSG 
 ```sh
@@ -148,29 +187,5 @@ az network vnet peering create -n $vnet_peering_name_bastion_aro \
 az network vnet peering list -g $rg_bastion_name --vnet-name $vnet_bastion_name  --subscription $subId
 az network vnet peering show -g $rg_bastion_name -n $vnet_peering_name_bastion_aro --vnet-name $vnet_bastion_name --query peeringState
 az network vnet peering show -g $rg_name -n $vnet_peering_name_bastion_aro --vnet-name $vnet_name --query peeringState
-
-```
-
-## Setup VNet peering : ARO ==> ACR
-```sh
-az network vnet peering create -n $acr_vnet_peering_name \
-    -g $rg_name \
-    --subscription $subId \
-    --allow-vnet-access \
-    --vnet-name $vnet_name \
-    --remote-vnet $acr_vnet_id
-
-az network vnet peering show -g $rg_name -n $acr_vnet_peering_name --vnet-name $vnet_name --query peeringState
-
-az network vnet peering create -n $acr_vnet_peering_name \
-    -g $rg_name \
-    --subscription $subId \
-    --allow-vnet-access \
-    --vnet-name $acr_vnet_name\
-    --remote-vnet $vnet_id
-
-az network vnet peering list -g $rg_name --vnet-name $vnet_name  --subscription $subId
-az network vnet peering show -g $rg_name -n $acr_vnet_peering_name --vnet-name $vnet_name --query peeringState
-az network vnet peering show -g $rg_name -n $acr_vnet_peering_name --vnet-name $acr_vnet_name --query peeringState
 
 ```

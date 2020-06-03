@@ -5,6 +5,8 @@
 ## ARO Core variables
 ```sh
 
+az provider show -n  Microsoft.RedHatOpenShift --query  "resourceTypes[?resourceType == 'OpenShiftClusters']".locations 
+
 # az account list-locations : francecentral | northeurope | westeurope | eastus2
 location=westeurope 
 echo "location is : " $location 
