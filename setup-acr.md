@@ -26,12 +26,13 @@ Note:
 # classic registry without replication, private link neither: az acr create --name $acr_registry_name --sku standard --location $location --resource-group $rg_name 
 
 az provider register --namespace Microsoft.ContainerRegistry
-az monitor log-analytics workspace create --workspace-name $acr_analytics_workspace --location $location -g $rg_name
-acr_analytics_workspace_id=$(az monitor log-analytics workspace show --workspace-name $acr_analytics_workspace -g $rg_name --query "id" --output tsv)
-echo $acr_analytics_workspace_id
+
+#az monitor log-analytics workspace create --workspace-name $acr_analytics_workspace --location $location -g $rg_name
+#acr_analytics_workspace_id=$(az monitor log-analytics workspace show --workspace-name $acr_analytics_workspace -g $rg_name --query "id" --output tsv)
+#echo $acr_analytics_workspace_id
 
 # Use Premium sku to enable Private Link & ACR Firewall
-az acr create --name $acr_registry_name --sku Premium --location $location -g $rg_name --workspace $acr_analytics_workspace_id 
+az acr create --name $acr_registry_name --sku Premium --location $location -g $rg_name # --workspace $acr_analytics_workspace_id 
 
 # Get the ACR registry resource id
 acr_registry_id=$(az acr show --name $acr_registry_name --resource-group $rg_name --query "id" --output tsv)
@@ -52,23 +53,14 @@ az acr check-health --yes -n $acr_registry_name
 # Create role assignment
 
 See :
-- [https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication-managed-identity]
+- [https://docs.microsoft.com/en-us/azure/container-registry/container-registry-auth-service-principal](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-auth-service-principal)
+- [https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#acrpull](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#acrpull)
+- [https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#acrpush](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#acrpush)
 - [https://github.com/MicrosoftDocs/azure-docs/issues/51672](https://github.com/MicrosoftDocs/azure-docs/issues/51672#issuecomment-630652951)
-- [https://docs.microsoft.com/en-us/azure/aks/cluster-container-registry-integration](https://docs.microsoft.com/en-us/azure/aks/cluster-container-registry-integration)
 
 ```sh
-# with SP when Managed Identities is not set during AKS cluster creation : az role assignment create --assignee $sp_id --role acrpull --scope $acr_registry_id
-#  when Managed Identities is set during AKS cluster creation :
-
-CLIENT_ID=$(az aks show --resource-group $rg_name --name $cluster_name --query "servicePrincipalProfile.clientId" --output tsv)
-echo "AKS CLIENT_ID:" $CLIENT_ID 
-
-aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
-echo "AKS Cluster Identity Client ID " $aks_client_id
-
-# role assignment will be done through attach-acr in AKS
-# az role assignment create --assignee $aks_client_id --role acrpull --scope $acr_registry_id
-
+az role assignment create --assignee $aro_spn --role acrpull --scope $acr_registry_id
+az role assignment create --assignee $aro_spn --role acrpush --scope $acr_registry_id
 ```
 
 
@@ -92,13 +84,13 @@ echo "Private-Link DNS ID :" $private_dns_link_id
 az network private-dns link vnet create --name $acr_bastion_private_dns_link_name --virtual-network $bastion_vnet_id --zone-name privatelink.azurecr.io --registration-enabled false -g $rg_name
 
 bastion_private_dns_link_id=$(az network private-dns link vnet show --name $acr_bastion_private_dns_link_name --zone-name "privatelink.azurecr.io" -g $rg_name --query "id" --output tsv)
-echo "Private-Link DNS ID :" $bastion_private_dns_link_id
+echo "Bastion Private-Link DNS ID :" $bastion_private_dns_link_id
 
-# The private-endpoint must be created in the Consumer VNet/Subnet, so it will be the AKS $subnet_id
+# The private-endpoint must be created in the Consumer VNet/Subnet, so it will be the ARO Workers $worker_subnet_id
 az network private-endpoint create \
     --name $acr_private_endpoint_name \
     --resource-group $rg_name \
-    --subnet $subnet_id \
+    --subnet $worker_subnet_id \
     --private-connection-resource-id $acr_registry_id \
     --group-ids registry \
     --location $location \
@@ -171,7 +163,7 @@ Preview [Limitations](https://docs.microsoft.com/en-us/azure/container-registry/
 ```sh
 
 az acr update --name $acr_registry_name --default-action Deny
-az acr network-rule add --name $acr_registry_name --subnet $subnet_name
+az acr network-rule add --name $acr_registry_name --subnet $worker_subnet_id
 az acr network-rule list --name $acr_registry_name
 
 # Verify access to the registry

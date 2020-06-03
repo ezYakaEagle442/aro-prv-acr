@@ -1,7 +1,7 @@
 # ARO Private cluster &amp; ACR with Private-Endpoint
 
 # Introduction
-This is an introduction to play with Storage integration in ARO : OCS (Ceph) vs Azure Disk + File + Blob, Storage types (GRS, etc)
+This is an introduction to play with ARO Private cluster & ACR with Private-Endpoint
 
 
 ## **Disclaimer**

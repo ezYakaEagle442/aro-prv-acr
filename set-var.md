@@ -11,7 +11,7 @@ az provider show -n  Microsoft.RedHatOpenShift --query  "resourceTypes[?resource
 location=westeurope 
 echo "location is : " $location 
 
-appName="prv-acr" 
+appName="prvacr" 
 echo "appName is : " $appName 
 
 rg_name="rg-${appName}-${location}" 
@@ -57,6 +57,9 @@ echo "ACR private-dns link Name for Bastion :" $acr_bastion_private_dns_link_nam
 
 acr_private_endpoint_name="prv-ep-acr-${appName,,}"
 echo "ACR private-endpoint Name :" $acr_private_endpoint_name
+
+acr_private_endpoint_svc_con_name="prv-ep-acr-${appName,,}-svc-con"
+echo "ACR private-endpoint Service Connection :" $acr_private_endpoint_svc_con_name
 
 ssh_passphrase="<your secret>"
 ssh_key="${appName}-key" # id_rsa
