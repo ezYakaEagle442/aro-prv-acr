@@ -61,6 +61,18 @@ echo "ACR private-endpoint Name :" $acr_private_endpoint_name
 acr_private_endpoint_svc_con_name="prv-ep-acr-${appName,,}-svc-con"
 echo "ACR private-endpoint Service Connection :" $acr_private_endpoint_svc_con_name
 
+storage_private_dns_link_name="prv-lnk-storage-${appName,,}"
+echo "Storage private-dns link Name :" $storage_private_dns_link_name
+
+storage_bastion_private_dns_link_name="prv-lnk-storage-bastion-${appName,,}"
+echo "Storage private-dns link Name for Bastion :" $storage_bastion_private_dns_link_name
+
+storage_private_endpoint_name="prv-ep-str-${appName,,}"
+echo "Storage private-endpoint Name :" $storage_private_endpoint_name
+
+storage_private_endpoint_svc_con_name="prv-ep-str-${appName,,}-svc-con"
+echo "Storage private-endpoint Service Connection :" $storage_private_endpoint_svc_con_name
+
 ssh_passphrase="<your secret>"
 ssh_key="${appName}-key" # id_rsa
 
