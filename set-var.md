@@ -43,6 +43,18 @@ echo "apiserver visibility is : " $apiserver_visibility
 ingress_visibility="Private"
 echo "ingress visibility is : " $ingress_visibility 
 
+win_vm_admin_pwd="??? CHANGE THIS ADMIN Password !!!"
+
+ssh_passphrase="<your secret>"
+ssh_key="${appName}-key" # id_rsa
+
+# Storage account name must be between 3 and 24 characters in length and use numbers and lower-case letters only
+storage_name="stwe""${appName,,}"
+echo "Storage name:" $storage_name
+
+target_namespace="staging"
+echo "Target namespace:" $target_namespace
+
 acr_registry_name="acr${appName,,}"
 echo "ACR registry Name :" $acr_registry_name
 
@@ -53,7 +65,7 @@ acr_private_dns_link_name="prv-lnk-acr-${appName,,}"
 echo "ACR private-dns link Name :" $acr_private_dns_link_name
 
 acr_bastion_private_dns_link_name="prv-lnk-acr-bastion-${appName,,}"
-echo "ACR private-dns link Name for Bastion :" $acr_bastion_private_dns_link_name
+echo "ACR Bastion private-dns link Name for Bastion :" $acr_bastion_private_dns_link_name
 
 acr_private_endpoint_name="prv-ep-acr-${appName,,}"
 echo "ACR private-endpoint Name :" $acr_private_endpoint_name
@@ -65,7 +77,7 @@ storage_private_dns_link_name="prv-lnk-storage-${appName,,}"
 echo "Storage private-dns link Name :" $storage_private_dns_link_name
 
 storage_bastion_private_dns_link_name="prv-lnk-storage-bastion-${appName,,}"
-echo "Storage private-dns link Name for Bastion :" $storage_bastion_private_dns_link_name
+echo "Storage Bastion private-dns link Name for Bastion :" $storage_bastion_private_dns_link_name
 
 storage_private_endpoint_name="prv-ep-str-${appName,,}"
 echo "Storage private-endpoint Name :" $storage_private_endpoint_name
@@ -73,8 +85,11 @@ echo "Storage private-endpoint Name :" $storage_private_endpoint_name
 storage_private_endpoint_svc_con_name="prv-ep-str-${appName,,}-svc-con"
 echo "Storage private-endpoint Service Connection :" $storage_private_endpoint_svc_con_name
 
-ssh_passphrase="<your secret>"
-ssh_key="${appName}-key" # id_rsa
+storage_bastion_private_endpoint_name="prv-ep-str-bastion-${appName,,}"
+echo "Storage Bastion private-endpoint Name :" $storage_bastion_private_endpoint_name
+
+storage_bastion_private_endpoint_svc_con_name="prv-ep-str-bastion-${appName,,}-svc-con"
+echo "Storage Bastionprivate-endpoint Service Connection :" $storage_bastion_private_endpoint_svc_con_name
 
 dns_zone="cloudapp.azure.com"
 echo "DNS Zone is : " $dns_zone
@@ -84,16 +99,6 @@ echo "App DNS zone " $app_dns_zone
 
 custom_dns="akshandsonlabs.com"
 echo "Custom DNS is : " $custom_dns
-
-# Storage account name must be between 3 and 24 characters in length and use numbers and lower-case letters only
-storage_name="stwe""${appName,,}"
-echo "Storage name:" $storage_name
-
-target_namespace="staging"
-echo "Target namespace:" $target_namespace
-
-vault_secret="NoSugarNoStar" 
-echo "Vault secret:" $vault_secret 
 
 git_url="https://github.com/your-project/xxx.git"
 echo "Project git repo URL : " $git_url 
@@ -108,9 +113,11 @@ Note: The here under variables are built based on the varibales defined above, y
 
 ```sh
 
-
 vault_name="kv-${appName}"
 echo "Vault name :" $vault_name
+
+vault_secret="NoSugarNoStar" 
+echo "Vault secret:" $vault_secret 
 
 vault_secret_name="${appName}-secret"
 echo "Vault secret name:" $vault_secret_name 
@@ -190,6 +197,9 @@ echo "Azure Firewall application rule Name :" $fw_app_rule_name
 
 # Bastion
 
+jumpoff_name="winjumpoff" # Windows computer name cannot be more than 15 characters long
+echo "Bastion JumpOff name :" $jumpoff_name
+
 bastion_name="${appName}-bastion"
 echo "Bastion name :" $bastion_name
 
@@ -215,8 +225,8 @@ appgw_vnet_peering_name="vnetp-AppGwVNet-To-ARO-${appName}-VNet"
 echo "VNet Peering Name App. Gateway VNet To ARO :" $appgw_vnet_peering_name
 
 # https://docs.microsoft.com/en-us/cli/azure/network/bastion?view=azure-cli-latest#az-network-bastion-create
-# must have a subnet called AzureBastionSubnet
-subnet_bastion_name="AzureBastionSubnet" #"snet-${appName}-AzureBastion"
+# If you use Azure Bastion : must have a subnet called AzureBastionSubnet
+subnet_bastion_name="snet-${appName}-AzureBastion" # "AzureBastionSubnet"
 echo "Bastion Subnet Name :" $subnet_bastion_name
 
 bastion_IP="pip-bastionIP-${appName}"

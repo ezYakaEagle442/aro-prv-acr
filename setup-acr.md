@@ -2,7 +2,7 @@
 
 See also :
 - [https://docs.openshift.com/container-platform/4.4/registry/registry-options.html](https://docs.openshift.com/container-platform/4.4/registry/registry-options.html)
-- [https://docs.openshift.com/container-platform/4.4/registry/configuring_registry_storage/configuring-registry-storage-azure-user-infrastructure.html](https://docs.openshift.com/container-platform/4.4/registry/configuring_registry_storage/configuring-registry-storage-azure-user-infrastructure.html)
+- [Configuring the registry for Azure storage](https://docs.openshift.com/container-platform/4.4/registry/configuring_registry_storage/configuring-registry-storage-azure-user-infrastructure.html)
 - [Notary v2 project - cross-industry initiative](https://github.com/notaryproject/requirements)
 - ACR supports [Content-Trust](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-content-trust)
 
@@ -180,6 +180,9 @@ docker pull $acr_registry_name.azurecr.io/hello-world:v1
 
 ```
 
+
+ALL BELOW SECTIONS ARE NOT VALIDATED - TO BE CLEANED - !!!
+
 ## Configure ARO with ACR
 See :
 - [ARO doc "Configuring the registry for Azure user-provisioned infrastructure"](https://docs.openshift.com/container-platform/4.4/registry/configuring_registry_storage/configuring-registry-storage-azure-user-infrastructure.html)
@@ -270,6 +273,9 @@ az storage blob download \
 
 ```
 
+
+## [Configuring the registry for Azure storage](https://docs.openshift.com/container-platform/4.4/registry/configuring_registry_storage/configuring-registry-storage-azure-user-infrastructure.html)
+
 ```sh
 oc create secret generic image-registry-private-configuration-user --from-literal=REGISTRY_STORAGE_AZURE_ACCOUNTKEY=<accountkey> --namespace openshift-image-registry
 
@@ -280,6 +286,12 @@ storage:
   azure:
     accountName: <account-name>
     container: <container-name>
+
+# Get the Azure Storage Account created by default in ARO
+oc get config cluster
+storage_acct_name=$(oc describe config cluster | grep -i "Account Name:")
+aro_azure_storage_acct=`echo -e $storage_acct_name | cut -d  ":" -f2 | cut -d  " " -f2`
+echo "ARO default Azure Storage Account " $aro_azure_storage_acct
 
 ```
 
