@@ -71,7 +71,7 @@ choco install git.install --Yes --confirm --accept-license
 # do not install 2.2.0 as this is a requirement for AAD Integration : az ad app permission admin-consent
 # requires version min of 2.0.67 and max of 2.1.0.
 # AKS managed-identity requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity
-choco install azure-cli --Yes --confirm --accept-license --version 2.1.0 
+choco install azure-cli --Yes --confirm --accept-license --version 2.5.1 
 ```
 
 ## You can use any tool to run SSH & AZ CLI
