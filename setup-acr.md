@@ -1,6 +1,8 @@
 # Create Azure Container Registry
 
 See also :
+- [https://docs.openshift.com/container-platform/4.4/registry/registry-options.html](https://docs.openshift.com/container-platform/4.4/registry/registry-options.html)
+- [https://docs.openshift.com/container-platform/4.4/registry/configuring_registry_storage/configuring-registry-storage-azure-user-infrastructure.html](https://docs.openshift.com/container-platform/4.4/registry/configuring_registry_storage/configuring-registry-storage-azure-user-infrastructure.html)
 - [Notary v2 project - cross-industry initiative](https://github.com/notaryproject/requirements)
 - ACR supports [Content-Trust](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-content-trust)
 
@@ -166,8 +168,7 @@ az acr update --name $acr_registry_name --default-action Deny
 az acr network-rule add --name $acr_registry_name --subnet $worker_subnet_id
 
 # myip=$(dig +short myip.opendns.com @resolver1.opendns.com)
-# export AUTHORIZED_IP_RANGE="176.134.171.0/24"
-# echo "IP range allowed to call ACR : " $AUTHORIZED_IP_RANGE
+AUTHORIZED_IP_RANGE="176.134.171.0/24"
 # az acr network-rule add --name $acr_registry_name --ip-address $AUTHORIZED_IP_RANGE
 az acr update --name $acr_registry_name --public-network-enabled false
 az acr network-rule list --name $acr_registry_name
@@ -178,3 +179,130 @@ az acr login --name  $acr_registry_name
 docker pull $acr_registry_name.azurecr.io/hello-world:v1
 
 ```
+
+## Configure ARO with ACR
+See :
+- [ARO doc "Configuring the registry for Azure user-provisioned infrastructure"](https://docs.openshift.com/container-platform/4.4/registry/configuring_registry_storage/configuring-registry-storage-azure-user-infrastructure.html)
+- [Azure doc "Authorize requests to Azure Storage"](https://docs.microsoft.com/en-us/rest/api/storageservices/authorize-requests-to-azure-storage)
+- [Azure doc "Shared Access Signature](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview)
+- [Azure doc "SAS CLI sample"](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli)
+- [https://docs.microsoft.com/en-us/cli/azure/storage/container?view=azure-cli-latest#az-storage-container-generate-sas](https://docs.microsoft.com/en-us/cli/azure/storage/container?view=azure-cli-latest#az-storage-container-generate-sas)
+- When you create a storage account, [Azure generates two 512-bit storage account access keys](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage). These keys can be used to authorize access to data in your storage account via Shared Key authorization. Microsoft recommends that you use Azure Key Vault to manage your access keys, and that you regularly rotate and regenerate your keys. Using Azure Key Vault makes it easy to rotate your keys without interruption to your applications.
+
+### Create Storage
+
+```sh
+aro_registry_blob_str_name="straroreg$(uuidgen | cut -d '-' -f5 | tr '[A-Z]' '[a-z]')"
+aro_registry_container_name="aro-registry-container"
+
+az storage account create --name $aro_registry_blob_str_name --kind StorageV2 --sku Standard_ZRS --encryption-services blob --location $location -g $rg_name 
+aro_reg_str_acc_id=$(az storage account show --name $aro_registry_blob_str_name --resource-group $rg_name --query "id" --output tsv)
+echo "ARO Registry Storage Account ID :" $aro_reg_str_acc_id
+
+az storage account list -g $rg_name
+az storage container create --account-name $aro_registry_blob_str_name --name $aro_registry_container_name --auth-mode login --public-access off
+```
+
+```sh
+
+az role assignment create \
+    --role "Storage Blob Data Contributor" \
+    --scope "/subscriptions/$subId/resourceGroups/$rg_name/providers/Microsoft.Storage/storageAccounts/$aro_registry_blob_str_name" \
+    --assignee pinpin@ms.grd # put your <email>
+
+str_acc_access_key1=$(az storage account keys list -g $rg_name --account-name $aro_registry_blob_str_name --query [0].value -o tsv)
+str_acc_access_key2=$(az storage account keys list -g $rg_name --account-name $aro_registry_blob_str_name --query [1].value -o tsv)
+
+# tzselect
+# end_date=`date -u -d "30 minutes" '+%Y-%m-%dT%H:%M:%SZ'` # 2020-06-03T20:19Z
+# end_date=`date --date 'TZ="Europe/Paris" 2020-07-01T17:00:00'` 
+end_date=`date --iso-8601=seconds --date "2020-07-01T17:00:00"` # +%FT%T%z
+
+# Define your own IP range
+AUTHORIZED_IP_RANGE="176.134.171.0-176.134.171.255" # 176.134.171.0/24 | 172.16.2.0/24 | 192.168.1.0/24
+
+# expiry : specifies the UTC datetime (Y-m-d'T'H:M'Z')
+# Because the maximum interval over which the user delegation key is valid is 7 days from the start date, you should specify an expiry time for the SAS that is within 7 days of the start time. The SAS is invalid after the user delegation key expires, so a SAS with an expiry time of greater than 7 days will still only be valid for 7 days.
+
+aro_registry_container_sas=$(az storage container generate-sas \
+    --account-name $aro_registry_blob_str_name \
+    --name $aro_registry_container_name \
+    --account-key $str_acc_access_key1 \
+    --permissions acdlrw \
+    --expiry "2020-06-10T17:00Z" \
+    --auth-mode login \
+    --https-only \
+    --ip $AUTHORIZED_IP_RANGE)
+    # --as-user
+
+echo "aro_registry_container_sas : " $aro_registry_container_sas
+
+```
+
+## Test
+
+```sh
+
+file_to_upload="helloworld_in.txt"
+file_to_download="helloworld_out.txt" #~/destination/path/to/outputfile
+
+echo -e "Hello Pinpin !" > $file_to_upload
+
+az storage blob upload \
+    --account-name $aro_registry_blob_str_name \
+    --container-name $aro_registry_container_name \
+    --name helloworld \
+    --file $file_to_upload \
+    --auth-mode login
+
+az storage blob list \
+    --account-name $aro_registry_blob_str_name \
+    --container-name $aro_registry_container_name \
+    --output table \
+    --auth-mode login
+
+az storage blob download \
+    --account-name $aro_registry_blob_str_name \
+    --container-name $aro_registry_container_name \
+    --name helloworld \
+    --file $file_to_download \
+    --auth-mode login
+
+```
+
+```sh
+oc create secret generic image-registry-private-configuration-user --from-literal=REGISTRY_STORAGE_AZURE_ACCOUNTKEY=<accountkey> --namespace openshift-image-registry
+
+
+oc edit configs.imageregistry.operator.openshift.io/cluster
+
+storage:
+  azure:
+    accountName: <account-name>
+    container: <container-name>
+
+```
+
+## Setup Private-Endpoint
+
+```sh
+
+```
+
+## Setup DNS
+
+```sh
+
+```
+
+```sh
+
+```
+
+## Setup Storage Firewall
+```sh
+az storage account update --name $aro_registry_blob_str_name --default-action deny
+az storage account network-rule list --account-name $aro_registry_blob_str_name 
+az storage account network-rule add --action allow --ip-address $AUTHORIZED_IP_RANGE --account-name $aro_registry_blob_str_name --subnet $worker_subnet_id -g $rg_name
+```
+

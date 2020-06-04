@@ -1,6 +1,5 @@
 
 See also :
-- []()
 - [https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-cli](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-cli)
 - [https://docs.microsoft.com/en-us/cli/azure/storage/blob?view=azure-cli-latest](https://docs.microsoft.com/en-us/cli/azure/storage/blob?view=azure-cli-latest)
 
@@ -65,6 +64,9 @@ storage_network_interface_private_ip=$(az resource show --ids $network_interface
   --api-version 2019-04-01 --query 'properties.ipConfigurations[0].properties.privateIPAddress' --output tsv)
 echo "Storage Network Interface private IP :" $storage_network_interface_private_ip
 
+# az storage account private-endpoint-connection show --name $storage_private_endpoint_name --account-name $blob_str_name -g $rg_name
+# az storage account private-endpoint-connection approve --name $storage_private_endpoint_name --account-name $blob_str_name -g $rg_name
+
 ```
 
 ## Setup DNS
@@ -88,17 +90,27 @@ nslookup $storage_private
 
 ```
 
-## Test
+## Test from Bastion
 
 ```sh
+AUTHORIZED_IP_RANGE="192.168.1.0/24" 
+az storage account update --name $blob_str_name --default-action deny
+az storage account network-rule list --account-name $blob_str_name 
+az storage account network-rule add --action allow --account-name $blob_str_name --subnet $bastion_subnet_id -g $rg_name # --ip-address $AUTHORIZED_IP_RANGE
+az storage account network-rule add --action allow --account-name $blob_str_name --ip-address $AUTHORIZED_IP_RANGE -g $rg_name
 
 # https://docs.microsoft.com/en-us/azure/storage/common/storage-auth-aad?toc=/azure/storage/blobs/toc.json
+
+file_to_upload="helloworldtest_in.txt"
+file_to_download="helloworldtest_out.txt" #~/destination/path/to/outputfile
+
+echo -e "Hello Pinpin from PE" > $file_to_upload
 
 az storage blob upload \
     --account-name $blob_str_name \
     --container-name $container_name \
-    --name helloworld \
-    --file helloworld.txt \
+    --name helloworldtest \
+    --file $file_to_upload \
     --auth-mode login
 
 az storage blob list \
@@ -110,8 +122,8 @@ az storage blob list \
 az storage blob download \
     --account-name $blob_str_name \
     --container-name $container_name \
-    --name helloworld \
-    --file ~/destination/path/for/file \
+    --name helloworldtest \
+    --file $file_to_download \
     --auth-mode login
 
 ```
