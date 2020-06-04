@@ -38,7 +38,6 @@ echo "ARO Ingress Controller IP: " $ing_ctl_ip
 aro_spn=$(az aro show -n $cluster_name -g $rg_name --query 'servicePrincipalProfile.clientId' -o tsv)
 echo "ARO Service Principal Name: " $aro_spn
 
-
 managed_rg=$(az aro show -n $cluster_name -g $rg_name --query 'clusterProfile.resourceGroupId' -o tsv)
 echo "ARO Managed Resource Group : " $managed_rg
 
@@ -64,7 +63,11 @@ aro_pwd=$(az aro list-credentials -n $cluster_name -g $rg_name | jq -r '.kubeadm
 See [https://docs.microsoft.com/en-us/azure/openshift/tutorial-connect-cluster#install-the-openshift-cli](https://docs.microsoft.com/en-us/azure/openshift/tutorial-connect-cluster#install-the-openshift-cli)
 ```sh
 cd ~
-wget https://downloads-openshift-console.apps.rptd5b3w.westeurope.aroapp.io/amd64/linux/oc.tar
+
+aro_download_url=${aro_console_url/console/downloads}
+echo "aro_download_url" $aro_download_url
+
+wget $aro_download_url/amd64/linux/oc.tar
 
 mkdir openshift
 tar -xvf oc.tar -C openshift
@@ -118,7 +121,30 @@ oc get roles --all-namespaces
 oc get rolebindings --all-namespaces
 oc get ingresses  --all-namespaces
 
+oc create serviceaccount api-service-account
+oc apply -f ./cnf/clusterRole.yaml
+
+sa_secret_name=$(oc get serviceaccount api-service-account  -o json | jq -Mr '.secrets[].name')
+echo "SA secret name " $sa_secret_name
+
+token_secret_value=$(oc get secrets  $sa_secret_name -o json | jq -Mr '.items[0].data.token' | base64 -d)
+echo "SA secret  " $sa_secret_value
+
+# kube_url=$(oc get endpoints -o jsonpath='{.items[0].subsets[0].addresses[0].ip}')
+# echo "Kube URL " $kube_url
+
 curl -k $aro_api_server_url/api/v1/namespaces -H "Authorization: Bearer $token_secret_value" -H 'Accept: application/json'
 curl -k $aro_api_server_url/apis/user.openshift.io/v1/users/~ -H "Authorization: Bearer $token_secret_value" -H 'Accept: application/json'
 
+```
+
+## Expose the built-in integrated OpenShift container registry with a Route
+
+
+- [ARO docs "Exposing the registry"](https://docs.openshift.com/aro/4/registry/securing-exposing-registry.html) states: Unlike previous versions of OpenShift Container Platform, the registry is not exposed outside of the cluster at the time of installation.
+- You need to have configured an identity provider (like Azure AD) and [assign user access](https://docs.openshift.com/aro/4/registry/accessing-the-registry.html). 
+TODO
+
+```sh
+docker login -u pinpin@ms.grd -p <token> default-route-openshift-image-registry.apps.foo4u0i8.eastus.aroapp.io
 ```
