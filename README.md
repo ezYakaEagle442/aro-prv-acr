@@ -1,6 +1,6 @@
 # ARO Private cluster &amp; ACR with Private-Endpoint
 
-# Introduction
+## Introduction
 This is an introduction to play with ARO Private cluster & ACR with Private-Endpoint
 
 
