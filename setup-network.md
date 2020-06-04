@@ -64,7 +64,9 @@ No hassle of managing NSGs: Azure Bastion is a fully managed platform PaaS servi
 
 [https://docs.microsoft.com/en-us/cli/azure/network/bastion?view=azure-cli-latest#az-network-bastion-create](https://docs.microsoft.com/en-us/cli/azure/network/bastion?view=azure-cli-latest#az-network-bastion-create)
 The SKU of the public IP must be Standard.
-Name of the virtual network. **It must have a subnet called AzureBastionSubnet.**
+
+Subnet with name 'AzureBastionSubnet' **can be used only for the Azure Bastion resource**.
+If you use Azure Bastion,  **VNet must have a subnet called AzureBastionSubnet.**
 
 ```sh
 # The gateway provides connectivity between the routers in the on-premises network and the virtual network. The gateway is placed in its own subnet. Azure only allows VPN and ExpressRoute gateways to be deployed into these subnets.
@@ -113,6 +115,8 @@ See
 [Your SSH keys should have been generated at pre-req step](./setup-prereq#generates-your-ssh-keys)
 
 
+<span style="color:red">/!\ IMPORTANT </span> : If you create a Linux JumpOff you will not have access to the ARO console, you may pefer to use a Windows JumpOff instead.
+
 ```sh
 #az network nsg create --name nsg-management -g $rg_bastion_name --location $location 
 #az network nsg rule create --access Allow -destination-port-range 3389 -source-address-prefixes Internet --name "Allow RDP from Internet" --nsg-name nsg-management -g $rg_bastion_name --priority 100
@@ -121,14 +125,25 @@ See
 
 # az vm list-sizes --location $location --output table
 # az vm image list-publishers --location $location --output table
-# az vm image list-offers --publisher MicrosoftWindowsServer --location $location --output table
-# az vm image list --publisher MicrosoftWindowsServer --offer WindowsServer --location $location --output table
+az vm image list-offers --publisher MicrosoftWindowsServer --location $location --output table
+az vm image list --publisher MicrosoftWindowsServer --offer WindowsServer --location $location --output table
 
 # az vm image list-publishers --location $location --output table | grep -i Canonical
 # az vm image list-offers --publisher Canonical --location $location --output table
 # az vm image list --publisher Canonical --offer UbuntuServer --location $location --output table
 
-# --size Standard_D1_v2 or Standard_B1s
+az vm create --name $jumpoff_name \
+  --image Win2019Datacenter \
+  --admin-username $bastion_admin_username \
+  --admin-password $win_vm_admin_pwd \
+  --resource-group $rg_bastion_name \
+  --vnet-name $vnet_bastion_name \
+  --subnet ManagementSubnet \
+  --nsg $b_nsg \
+  --size Standard_D3_v2 \
+  --location $location \
+  --output table
+
 az vm create --name $bastion_name \
     --image UbuntuLTS \
     --admin-username $bastion_admin_username \
