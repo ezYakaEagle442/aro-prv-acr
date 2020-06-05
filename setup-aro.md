@@ -387,7 +387,15 @@ az storage blob download \
 
 - [ARO docs "Exposing the registry"](https://docs.openshift.com/aro/4/registry/securing-exposing-registry.html) states: Unlike previous versions of OpenShift Container Platform, the registry is not exposed outside of the cluster at the time of installation.
 - You need to have configured an identity provider (like Azure AD) and [assign user access](https://docs.openshift.com/aro/4/registry/accessing-the-registry.html). 
-TODO
+
+### Configure AAD as the Identity Provider (IDP)
+
+I have automated a snippet inspired by [Stuart](https://github.com/stuartatmicrosoft/azure-aro/blob/master/aro4-aad-connect.sh)
+```sh
+bash ./cnf/setup-aro-idp-aad.sh $cluster_name $rg_name
+```
+
+### ARO Config
 
 ```sh
 
