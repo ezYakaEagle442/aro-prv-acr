@@ -127,20 +127,23 @@ See
 # az vm image list-publishers --location $location --output table
 az vm image list-offers --publisher MicrosoftWindowsServer --location $location --output table
 az vm image list --publisher MicrosoftWindowsServer --offer WindowsServer --location $location --output table
+az vm image list-offers --publisher MicrosoftWindowsDesktop --location $location --output table
+az vm image list --publisher MicrosoftWindowsDesktop --offer Windows-10 --location $location --output table
 
 # az vm image list-publishers --location $location --output table | grep -i Canonical
 # az vm image list-offers --publisher Canonical --location $location --output table
 # az vm image list --publisher Canonical --offer UbuntuServer --location $location --output table
 
+# --size Standard_D3_v2 --image Win2019Datacenter
 az vm create --name $jumpoff_name \
-  --image Win2019Datacenter \
+  --image MicrosoftWindowsDesktop:Windows-10:20h1-entn-g2:19041.264.2005110456 \
   --admin-username $bastion_admin_username \
   --admin-password $win_vm_admin_pwd \
   --resource-group $rg_bastion_name \
   --vnet-name $vnet_bastion_name \
   --subnet ManagementSubnet \
   --nsg $b_nsg \
-  --size Standard_D3_v2 \
+  --size Standard_B2s \
   --location $location \
   --output table
 
