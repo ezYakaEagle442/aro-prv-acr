@@ -114,6 +114,10 @@ nslookup $storage_private
 
 ## Test from Bastion
 
+- [https://docs.microsoft.com/en-us/azure/storage/common/storage-network-security#grant-access-from-an-internet-ip-range](https://docs.microsoft.com/en-us/azure/storage/common/storage-network-security#grant-access-from-an-internet-ip-range)
+
+IP network rules are only allowed for public internet IP addresses. IP address ranges reserved for private networks (as defined in RFC 1918) aren't allowed in IP rules. Private networks include addresses that start with 10.*, 172.16.* - 172.31.*, and 192.168.*.
+
 ```sh
 AUTHORIZED_IP_RANGE="192.168.1.0/24" 
 az storage account update --name $blob_str_name --default-action deny

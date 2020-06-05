@@ -131,7 +131,7 @@ sa_secret_name=$(oc get serviceaccount api-service-account  -o json | jq -Mr '.s
 echo "SA secret name " $sa_secret_name
 
 token_secret_value=$(oc get secrets  $sa_secret_name -o json | jq -Mr '.items[0].data.token' | base64 -d)
-echo "SA secret  " $sa_secret_value
+echo "SA secret  " $token_secret_value
 
 # kube_url=$(oc get endpoints -o jsonpath='{.items[0].subsets[0].addresses[0].ip}')
 # echo "Kube URL " $kube_url
@@ -288,9 +288,6 @@ az network private-dns record-set a add-record -g $rg_name \
   --zone-name privatelink.blob.core.windows.net \
   --ipv4-address $storage_network_interface_private_ip
 
-# storage_public=$(az storage account show --name $blob_str_name -g $rg_name --query "?? IP ??" --output tsv)
-# echo "Storage Public :" $storage_public
-
 storage_private="${aro_registry_blob_str_name}.privatelink.blob.core.windows.net"
 echo "Storage private :" $storage_private
 
@@ -298,17 +295,11 @@ nslookup ${aro_registry_blob_str_name}.blob.core.windows.net
 nslookup $storage_private
 ```
 
-### Update ARO Config
+### Update ARO Cluster Config
 ```sh
 oc create secret generic image-registry-private-configuration-user --from-literal=REGISTRY_STORAGE_AZURE_ACCOUNTKEY=$str_acc_access_key1 --namespace openshift-image-registry
-
-oc edit configs.imageregistry.operator.openshift.io/cluster
-
-# You will see fields like this :
-storage:
-  azure:
-    accountName: <account-name>
-    container: <container-name>
+oc get secret image-registry-private-configuration-user -n openshift-image-registry
+oc describe secret image-registry-private-configuration-user -n openshift-image-registry
 
 # Get the Azure Storage Account created by default in ARO
 oc get config cluster
@@ -319,13 +310,31 @@ echo "ARO default Azure Storage Account Name " $aro_azure_storage_acct
 aro_azure_storage_acct_id=$(az storage account show --name $aro_azure_storage_acct -g $managed_rg_name --query "id" --output tsv)
 echo "ARO default Azure Storage Account ID :" $aro_azure_storage_acct_id
 
+# Now Update ARO Cluster Config
+oc edit configs.imageregistry.operator.openshift.io/cluster
+
+# You will see fields like this :
+storage:
+  azure:
+    accountName: <account-name> # ==> replace with NEW $aro_registry_blob_str_name
+    container: <container-name> # ==> replace with NEW $aro_registry_container_name
+
 ```
 
 ### Setup Storage Firewall
+
+- [https://docs.microsoft.com/en-us/azure/storage/common/storage-network-security#grant-access-from-an-internet-ip-range](https://docs.microsoft.com/en-us/azure/storage/common/storage-network-security#grant-access-from-an-internet-ip-range)
+
+IP network rules are only allowed for public internet IP addresses. IP address ranges reserved for private networks (as defined in RFC 1918) aren't allowed in IP rules. Private networks include addresses that start with 10.*, 172.16.* - 172.31.*, and 192.168.*.
+
 ```sh
 az storage account update --name $aro_registry_blob_str_name --default-action deny
 az storage account network-rule list --account-name $aro_registry_blob_str_name 
 az storage account network-rule add --action allow --account-name $aro_registry_blob_str_name --subnet $worker_subnet_id -g $rg_name
+
+jumpoff_management_subnet_id=$(az network vnet subnet show --name ManagementSubnet --vnet-name $vnet_bastion_name -g $rg_bastion_name --query id -o tsv)
+echo "Bastion Subnet Id :" $jumpoff_management_subnet_id	
+az storage account network-rule add --action allow --account-name $aro_registry_blob_str_name --subnet $jumpoff_management_subnet_id  -g $rg_name
 
 # Define your own IP range
 #AUTHORIZED_IP_RANGE="176.134.171.0-176.134.171.255" # 176.134.171.0/24 | 172.16.2.0/24 | 192.168.1.0/24 | 192.168.0.0-192.168.7.255
@@ -338,11 +347,11 @@ az storage account network-rule list --account-name $aro_registry_blob_str_name
 ### Test from Bastion
 
 ```sh
-AUTHORIZED_IP_RANGE="192.168.1.0/24" 
+AUTHORIZED_IP_RANGE="42.42.42.0/24" # Set your own PUBLIC range
 az storage account update --name $blob_str_name --default-action deny
 az storage account network-rule list --account-name $blob_str_name 
-az storage account network-rule add --action allow --account-name $blob_str_name --subnet $bastion_subnet_id -g $rg_name # --ip-address $AUTHORIZED_IP_RANGE
-az storage account network-rule add --action allow --account-name $blob_str_name --ip-address $AUTHORIZED_IP_RANGE -g $rg_name
+az storage account network-rule add --action allow --account-name $blob_str_name --subnet $bastion_subnet_id -g $rg_name
+# az storage account network-rule add --action allow --account-name $blob_str_name --ip-address $AUTHORIZED_IP_RANGE -g $rg_name
 
 # https://docs.microsoft.com/en-us/azure/storage/common/storage-auth-aad?toc=/azure/storage/blobs/toc.json
 
@@ -352,21 +361,21 @@ file_to_download="helloworldtest_out.txt" #~/destination/path/to/outputfile
 echo -e "Hello Pinpin from PE" > $file_to_upload
 
 az storage blob upload \
-    --account-name $blob_str_name \
-    --container-name $container_name \
+    --account-name $aro_registry_blob_str_name \
+    --container-name $aro_registry_container_name \
     --name helloworldtest \
     --file $file_to_upload \
     --auth-mode login
 
 az storage blob list \
-    --account-name $blob_str_name \
-    --container-name $container_name \
+    --account-name $aro_registry_blob_str_name \
+    --container-name $aro_registry_container_name \
     --output table \
     --auth-mode login
 
 az storage blob download \
-    --account-name $blob_str_name \
-    --container-name $container_name \
+    --account-name $aro_registry_blob_str_name \
+    --container-name $aro_registry_container_name \
     --name helloworldtest \
     --file $file_to_download \
     --auth-mode login
@@ -376,11 +385,19 @@ az storage blob download \
 
 ## Expose the built-in integrated OpenShift container registry with a Route
 
-
 - [ARO docs "Exposing the registry"](https://docs.openshift.com/aro/4/registry/securing-exposing-registry.html) states: Unlike previous versions of OpenShift Container Platform, the registry is not exposed outside of the cluster at the time of installation.
 - You need to have configured an identity provider (like Azure AD) and [assign user access](https://docs.openshift.com/aro/4/registry/accessing-the-registry.html). 
 TODO
 
 ```sh
-docker login -u pinpin@ms.grd -p <token> default-route-openshift-image-registry.apps.foo4u0i8.eastus.aroapp.io
+
+oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
+aro_reg_default_route=$(oc get route default-route -n openshift-image-registry -o json | jq -Mr '.status.ingress[0].host')
+echo "ARO Registry default route : " $aro_reg_default_route
+
+oc policy add-role-to-user registry-viewer <user_name> # To pull images
+oc policy add-role-to-user registry-editor <user_name> # To Push images
+oc login $aro_api_server_url -u $aro_usr -p $aro_pwd
+docker login -u $aro_usr -p $(oc whoami -t) image-registry.openshift-image-registry.svc:5000
+docker login -u pinpin@ms.grd -p $token_secret_value $aro_reg_default_route
 ```
