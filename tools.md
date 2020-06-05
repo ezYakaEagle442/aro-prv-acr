@@ -39,6 +39,7 @@ Ex: run CloudShell in France Central Region if you plan do deploy your resources
 ```sh
 # https://chocolatey.org/packages/wsl
 choco install wsl --Yes --confirm --accept-license --verbose 
+choco install wsl-ubuntu-1804 --Yes --confirm --accept-license --verbose
 
 ```
 
