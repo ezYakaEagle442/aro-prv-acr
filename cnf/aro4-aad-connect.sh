@@ -3,8 +3,6 @@
 # Oringinally Written by Stuart Kirk with significant content from Jules Ouellette & Ahmed Sabbour
 # stuart.kirk@microsoft.com, jules.ouellette@microsoft.com, asabbour@microsoft.com
 #
-# Updated by Steve (aka Pinpin ! see https://github.com/ezYakaEagle442/aro-prv-acr)
-#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
 # NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 # IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
@@ -24,6 +22,17 @@ echo "I will attempt to connect Azure Red Hat OpenShift to Azure Active Director
 echo "*** Please note if your ARO cluster uses a custom domain, the console and app addresses must resolve prior to running this script ***"
 echo "ARO Cluster Name: $1"
 echo "ARO Resource Group Name: $2"
+
+echo "Shall I continue?" 
+PS3="Select a numbered option >> "
+options=("Yes" "No")
+select yn in "${options[@]}"
+do
+case $yn in
+    Yes ) break ;;
+    No ) echo "Well okay then."; exit ;;
+esac
+done
 
 ########## Set Variables
 echo -n "Obtaining the variables I need..."
