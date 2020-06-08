@@ -1,7 +1,9 @@
 # ARO Private cluster &amp; ACR with Private-Endpoint
 
 ## Introduction
-This is an introduction to play with ARO Private cluster & ACR with Private-Endpoint
+This is an introduction to play with ARO Private cluster and :
+- ARO Built-in integrated Registry using an [Azure BLOB Storage with a Private-Endpoint](https://docs.microsoft.com/en-us/azure/storage/common/storage-private-endpoints)
+- ACR with [Private-Endpoint](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-private-link#create-a-private-registry-endpoint)
 
 
 ## **Disclaimer**
