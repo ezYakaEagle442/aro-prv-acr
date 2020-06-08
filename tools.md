@@ -119,6 +119,7 @@ az -v
 ```
 ## How to install HELM from RedHat
 
+See [https://docs.openshift.com/aro/4/cli_reference/helm_cli/getting-started-with-helm-on-openshift-container-platform.html](https://docs.openshift.com/aro/4/cli_reference/helm_cli/getting-started-with-helm-on-openshift-container-platform.html)
 ```sh
 # https://mirror.openshift.com/pub/openshift-v4/clients/helm/latest
 ```
