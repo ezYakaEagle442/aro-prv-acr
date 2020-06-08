@@ -13,6 +13,7 @@ See also :
 - [Azure ARO docs](https://docs.microsoft.com/en-us/azure/openshift/tutorial-create-cluster)
 - [ARO 4.x docs](https://docs.openshift.com/aro/4/registry/architecture-component-imageregistry.html)
 - [http://aroworkshop.io](http://aroworkshop.io)
+- [https://aka.ms/aroworkshop-devops](https://aka.ms/aroworkshop-devops)
 - [https://github.com/akamenev/aro-private](https://github.com/akamenev/aro-private)
 - [https://github.com/stuartatmicrosoft/azure-aro/blob/master/aro4-replace-pull-secret.sh](https://github.com/stuartatmicrosoft/azure-aro/blob/master/aro4-replace-pull-secret.sh)
 
