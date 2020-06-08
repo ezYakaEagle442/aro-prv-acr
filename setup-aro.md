@@ -310,7 +310,7 @@ echo "ARO default Azure Storage Account Name " $aro_azure_storage_acct
 aro_azure_storage_acct_id=$(az storage account show --name $aro_azure_storage_acct -g $managed_rg_name --query "id" --output tsv)
 echo "ARO default Azure Storage Account ID :" $aro_azure_storage_acct_id
 
-# Now Update ARO Cluster Config
+# Now Update ARO Cluster Config, see https://docs.openshift.com/container-platform/4.4/registry/configuring_registry_storage/configuring-registry-storage-azure-user-infrastructure.html
 oc edit configs.imageregistry.operator.openshift.io/cluster
 
 # You will see fields like this :
@@ -394,6 +394,7 @@ I have automated a snippet inspired by [Stuart](https://github.com/stuartatmicro
 ```sh
 bash ./cnf/setup-aro-idp-aad.sh $cluster_name $rg_name
 ```
+You can then check in the Portal / [App Registration](https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)
 
 ### ARO Config
 
@@ -406,6 +407,14 @@ echo "ARO Registry default route : " $aro_reg_default_route
 oc policy add-role-to-user registry-viewer <user_name> # To pull images
 oc policy add-role-to-user registry-editor <user_name> # To Push images
 oc login $aro_api_server_url -u $aro_usr -p $aro_pwd
-docker login -u $aro_usr -p $(oc whoami -t) image-registry.openshift-image-registry.svc:5000
+docker login -u $aro_usr -p $(oc whoami -t) https://image-registry.openshift-image-registry.svc:5000
 docker login -u pinpin@ms.grd -p $token_secret_value $aro_reg_default_route
+
+# https://docs.openshift.com/aro/4/registry/accessing-the-registry.html#registry-accessing-metrics_accessing-the-registry
+curl --insecure -s -u $aro_usr -p $(oc whoami -t) https://image-registry.openshift-image-registry.svc:5000/extensions/v2/metrics | grep imageregistry | head -n 20
+curl --insecure -s -u pinpin@ms.grd -p $token_secret_value https://$aro_reg_default_route/extensions/v2/metrics | grep imageregistry | head -n 20
 ```
+
+### Sample SpringBoot App Build Test 
+
+Go to [build-java-app.md](build-java-app.md)
