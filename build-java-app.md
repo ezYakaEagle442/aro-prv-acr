@@ -8,11 +8,14 @@ See :
 - [https://docs.openshift.com/aro/4/applications/application_life_cycle_management/creating-applications-using-cli.html](https://docs.openshift.com/aro/4/applications/application_life_cycle_management/creating-applications-using-cli.html)
 - [https://docs.openshift.com/aro/4/applications/application_life_cycle_management/odc-deleting-applications.html](https://docs.openshift.com/aro/4/applications/application_life_cycle_management/odc-deleting-applications.html)
 - [https://docs.openshift.com/aro/4/applications/deployments/what-deployments-are.html](https://docs.openshift.com/aro/4/applications/deployments/what-deployments-are.html)
+- [https://aka.ms/aroworkshop-devops](https://aka.ms/aroworkshop-devops)
 
 ## Pre-req
 
 ```sh
 oc config current-context
+oc status
+oc projects
 oc new-project $appName --description="On-Prem Jenkins to build and push Docker image to ARO Built-in Registry configured with a NEW BLOB Stoarge+Private-Endpoint" --display-name="ARO PoC"
 oc get ns $appName
 oc get project $appName
@@ -20,17 +23,23 @@ oc describe project $appName
 
 ```
 
-## Build using Source 2 Image
+## Build using Source 2 Image (S2I)
 
 See :
 -  [https://docs.openshift.com/aro/4/builds/build-strategies.html#images-create-s2i_build-strategies](https://docs.openshift.com/aro/4/builds/build-strategies.html#images-create-s2i_build-strategies)
 - [Language Detection](https://docs.openshift.com/aro/4/applications/application_life_cycle_management/creating-applications-using-cli.html#language-detection)
 
 ```sh
-
+# https://catalog.redhat.com/software/containers/search?q=tomcat
+# https://hub.docker.com/r/jboss/wildfly/dockerfile
+# https://hub.docker.com/r/jboss/base/dockerfile ==> yum install curl wget
 oc new-app registry.access.redhat.com/jboss-webserver-3/webserver31-tomcat8-openshift:1.4-20~$git_url_springboot --context-dir="/" --strategy=source
 # oc new-app registry.access.redhat.com/jboss-webserver-3/webserver31-tomcat8-openshift:latest~$git_url_springboot --context-dir=/petclinic-s2i --strategy=source
 oc status --suggest
+# oc set probe dc/spring-petclinic --readiness xxxxx
+oc set probe dc/spring-petclinic --liveness --get-url=http://:8080/manage
+# oc set probe dc/spring-petclinic --remove --readiness --liveness
+
 oc logs -f bc/spring-petclinic
 
 # Check buildConfigs (bc)
@@ -45,29 +54,36 @@ oc describe imagestream spring-petclinic
 oc get imagestreamtags
 oc describe imagestreamtag webserver31-tomcat8-openshift:1.4-20
 
-oc get deploymentconfig
-oc describe deploymentconfig spring-petclinic
+oc get dc # deploymentconfig
+oc describe dc spring-petclinic
 
 
 for pod in $(oc get pods -n $appName -o custom-columns=:metadata.name)
 do
-    oc describe pod $pod -n $appName # | grep -i "Error"
-	# oc logs $pod -n $appName | grep -i "Error"
+    # oc describe pod $pod -n $appName # | grep -i "Error"
+	oc logs $pod -n $appName | grep -i "Error"
     # oc exec $pod -n $appName -- wget http://localhost:8080/manage/health
     # oc exec $pod -n $appName -- wget http://localhost:8080/manage/info
-    # k exec $pod -n $appName -it -- /bin/sh
+    # k exec $pod -n $appName -it -- /bin/sh #  yum install curl wget
 done
 
 
 
 oc get svc
 # Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
-oc expose svc/spring-petclinic
-oc get routes
-oc describe route spring-petclinic
-oc get ep
+# # cannot use --load-balancer-ip='' with --generator=route/v1  # --external-ip=''
+oc expose svc/spring-petclinic --name=spring-petclinic-pub --generator="service/v2" --type=LoadBalancer --load-balancer-ip='' 
+oc expose svc/spring-petclinic --name=spring-petclinic-route
+oc describe svc spring-petclinic-pub
+slb_pub_ip=$(oc get svc spring-petclinic-pub -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
+echo "Service Load Balancer Public IP  : " $slb_pub_ip
 
-app_route_url=$(oc get route spring-petclinic -o jsonpath="{.spec.host}")
+oc get routes
+oc describe route spring-petclinic-route
+oc get ep
+oc describe ep spring-petclinic
+
+app_route_url=$(oc get route spring-petclinic-route -o jsonpath="{.spec.host}")
 echo "App Route URL  : " $app_route_url
 
 oc get images | grep -i "image-registry.openshift-image-registry.svc:5000/$appName/spring-petclinic"
