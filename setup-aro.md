@@ -209,6 +209,8 @@ echo "aro_registry_container_sas : " $aro_registry_container_sas
 
 ### Setup Private-Endpoint
 
+See [https://docs.microsoft.com/en-us/azure/storage/common/storage-private-endpoints](https://docs.microsoft.com/en-us/azure/storage/common/storage-private-endpoints)
+
 ```sh
 az network private-dns zone create --name "privatelink.blob.core.windows.net" -g $rg_name
 
