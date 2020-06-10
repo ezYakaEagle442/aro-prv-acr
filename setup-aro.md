@@ -391,6 +391,9 @@ az storage blob download \
 - You need to have configured an identity provider (like Azure AD) and [assign user access](https://docs.openshift.com/aro/4/registry/accessing-the-registry.html). 
 
 ### Configure AAD as the Identity Provider (IDP)
+See :
+- [https://docs.microsoft.com/en-us/azure/openshift/configure-azure-ad-ui](https://docs.microsoft.com/en-us/azure/openshift/configure-azure-ad-ui)
+- [https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-restrict-your-app-to-a-set-of-users#update-the-app-to-enable-user-assignment](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-restrict-your-app-to-a-set-of-users#update-the-app-to-enable-user-assignment)
 
 I have automated a snippet inspired by [Stuart](https://github.com/stuartatmicrosoft/azure-aro/blob/master/aro4-aad-connect.sh)
 ```sh
