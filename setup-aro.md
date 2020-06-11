@@ -86,8 +86,13 @@ oc cluster-info
 
 ```
 
+Apply [KubeCtl alias](./tools#kube-tools)
+
 ## Create Namespaces
 ```sh
+
+oc config view --minify | grep namespace
+
 oc create namespace development
 oc label namespace/development purpose=development
 
@@ -100,7 +105,7 @@ oc label namespace/production purpose=production
 oc create namespace sre
 oc label namespace/sre purpose=sre
 
-oc get namespaces
+oc get ns --show-labels
 oc describe namespace production
 oc describe namespace sre
 ```
