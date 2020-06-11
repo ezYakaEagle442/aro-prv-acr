@@ -9,6 +9,9 @@ See :
 - [https://docs.openshift.com/aro/4/applications/application_life_cycle_management/odc-deleting-applications.html](https://docs.openshift.com/aro/4/applications/application_life_cycle_management/odc-deleting-applications.html)
 - [https://docs.openshift.com/aro/4/applications/deployments/what-deployments-are.html](https://docs.openshift.com/aro/4/applications/deployments/what-deployments-are.html)
 - [https://aka.ms/aroworkshop-devops](https://aka.ms/aroworkshop-devops)
+- [https://appdev.openshift.io/docs/getting-started.html](https://appdev.openshift.io/docs/getting-started.html)
+- [https://appdev.openshift.io/docs/spring-boot-runtime.html](https://appdev.openshift.io/docs/spring-boot-runtime.html)
+- [https://developers.redhat.com/blog/2020/06/02/how-the-fabric8-maven-plug-in-deploys-java-applications-to-openshift/](https://developers.redhat.com/blog/2020/06/02/how-the-fabric8-maven-plug-in-deploys-java-applications-to-openshift/)
 
 ## Pre-req
 
@@ -34,8 +37,9 @@ See :
 # https://hub.docker.com/r/jboss/wildfly/dockerfile
 # https://hub.docker.com/r/jboss/base/dockerfile ==> yum install curl wget
 oc new-app registry.access.redhat.com/jboss-webserver-3/webserver31-tomcat8-openshift:1.4-20~$git_url_springboot --context-dir="/" --strategy=source
-# oc new-app registry.access.redhat.com/jboss-webserver-3/webserver31-tomcat8-openshift:latest~$git_url_springboot --context-dir=/petclinic-s2i --strategy=source
 oc status --suggest
+
+# https://docs.openshift.com/aro/4/applications/application-health.html
 # oc set probe dc/spring-petclinic --readiness xxxxx
 oc set probe dc/spring-petclinic --liveness --get-url=http://:8080/manage
 # oc set probe dc/spring-petclinic --remove --readiness --liveness
@@ -101,13 +105,115 @@ docker pull spring-petclinic:latest
 ```
 
 
-## xxx
+## Build using DockerFile
+
+Firsly fork $git_url_springboot (https://github.com/spring-projects/spring-petclinic.git)  # to your repo
 
 ```sh
+
+oc new-project $appName --description="On-Prem Jenkins to build and push Docker image to ARO Built-in Registry configured with a NEW BLOB Stoarge+Private-Endpoint" --display-name="ARO PoC"
+oc get ns $appName
+oc get project $appName
+oc describe project $appName
+
+
+# https://dzone.com/articles/how-to-run-java-microservices-on-openshift-using-s
+
+oc delete project $appName
+
+oc config view --minify | grep namespace
+
+# with SSH git@github.com:your-git-home/spring-petclinic.git
+git_url="https://github.com/<!XXXyour-git-homeXXX!/spring-petclinic.git"
+echo "git Project repo URL : " $git_url 
+git clone $git_url
+
+# https://hub.docker.com/_/microsoft-java-maven
+# https://hub.docker.com/_/microsoft-java-jre-headless
+# https://hub.docker.com/_/microsoft-java-jre
+# If you do not have a Dockerfile, you can create the sample below to run your dummy SpringBoot App.
+# WARNING: Image "mcr.microsoft.com/java/maven:11u7-zulu-debian10" runs as the 'root' user which may not be permitted by your cluster administrator
+artifact="spring-petclinic-2.2.0.BUILD-SNAPSHOT.jar"
+echo -e "FROM mcr.microsoft.com/java/maven:11u7-zulu-debian10\n"\
+"VOLUME /tmp \n"\
+"ADD target/${artifact} app.jar \n"\
+"RUN touch /app.jar \n"\
+"EXPOSE 8080 \n"\
+"ENTRYPOINT [\""java\"", \""-Djava.security.egd=file:/dev/./urandom\"", \""-jar\"", \""/app.jar\""] \n"\
+> Dockerfile
+
+git add Dockerfile
+git commit -m "added Dockerfile"
+git push
+
+oc create namespace springboot
+oc label namespace/springboot purpose="SpringBootApps"
+# oc label namespace/springboot purpose-
+oc describe namespace springboot
+oc get ns --show-labels
+kn springboot
+
+oc new-app mcr.microsoft.com/java/maven:11u7-zulu-debian10~$git_url --context-dir="/" --strategy=Docker
+oc status --suggest
+
+oc get ev -A | grep -i error
+
+# https://docs.openshift.com/aro/4/applications/application-health.html
+# oc set probe dc/spring-petclinic --readiness xxxxx
+oc set probe dc/spring-petclinic --liveness --get-url=http://:8080/manage
+# oc set probe dc/spring-petclinic --remove --readiness --liveness
+
+oc logs -f bc/spring-petclinic
+
+# Check buildConfigs (bc)
+oc get bc
+oc describe bc spring-petclinic
+# oc edit bc spring-petclinic
+# oc start-build spring-petclinic
+
+oc get imagestream
+oc describe imagestream spring-petclinic
+
+oc get imagestreamtags
+oc describe imagestreamtag maven:11u7-zulu-debian10
+
+oc get dc # deploymentconfig
+oc describe dc spring-petclinic
+
+
+for pod in $(oc get pods -n springboot -o custom-columns=:metadata.name)
+do
+    # oc describe pod $pod -n springboot # | grep -i "Error"
+	oc logs $pod -n springboot | grep -i "Error"
+    # oc exec $pod -nspringboot -- wget http://localhost:8080/manage/health
+    # oc exec $pod -n springboot -- wget http://localhost:8080/manage/info
+    # k exec $pod -n springboot -it -- /bin/sh #  yum install curl wget
+done
+
+
+
+oc get svc
+oc expose svc/spring-petclinic --name=spring-petclinic-pub --generator="service/v2" --type=LoadBalancer --load-balancer-ip='' 
+oc describe svc spring-petclinic-pub
+slb_pub_ip=$(oc get svc spring-petclinic-pub -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
+echo "Service Load Balancer Public IP  : " $slb_pub_ip
+
+oc get ing
+oc describe ing spring-petclinic-ing
+oc get ep
+oc describe ep spring-petclinic
+
+oc get images | grep -i "image-registry.openshift-image-registry.svc:5000/$appName/spring-petclinic"
 
 ```
 
 ## xxx
+
+See :
+- [https://www.openshift.com/learn/topics/pipelines](https://www.openshift.com/learn/topics/pipelines)
+- [https://www.openshift.com/blog/pipelines_with_tekton](https://www.openshift.com/blog/pipelines_with_tekton)
+- [https://github.com/openshift/pipelines-tutorial](https://github.com/openshift/pipelines-tutorial)
+
 
 ```sh
 
@@ -127,6 +233,10 @@ docker pull spring-petclinic:latest
 
 # Build & Push Image to ACR
 
+See :
+- [https://docs.openshift.com/aro/4/builds/creating-build-inputs.html#builds-docker-credentials-private-registries_creating-build-inputs](https://docs.openshift.com/aro/4/builds/creating-build-inputs.html#builds-docker-credentials-private-registries_creating-build-inputs)
+- [Docker Push to ACR](https://docs.openshift.com/aro/4/builds/managing-build-output.html#builds-docker-source-build-output_managing-build-output)
+
 ## Create Docker Image
 ```sh
 # https://docs.microsoft.com/en-us/azure/container-registry/container-registry-quickstart-task-cli
@@ -142,7 +252,7 @@ mvn package # -DskipTests
 # mvn spring-boot:run
 
 artifact="spring-petclinic-2.2.0.BUILD-SNAPSHOT.jar"
-echo -e "FROM mcr.microsoft.com/java/jre:11u6-zulu-alpine\n"\
+echo -e "FROM mcr.microsoft.com/java/jre:11u7-zulu-alpine\n"\
 "VOLUME /tmp \n"\
 "ADD target/${artifact} app.jar \n"\
 "RUN touch /app.jar \n"\

@@ -15,7 +15,7 @@ spec:
       spec:
         containers:
         - name: petclinic
-          image: ${CONTAINER_REGISTRY}.azurecr.io/spring-petclinic:${IMAGE_TAG}
+          image: ${CONTAINER_REGISTRY}.azurecr.io/spring-petclinic:${IMAGE_TAG} # default-route-openshift-image-registry.apps.<XXX RANDOM XXX>.westeurope.aroapp.io
           imagePullPolicy: Always
           livenessProbe:
             initialDelaySeconds: 60
