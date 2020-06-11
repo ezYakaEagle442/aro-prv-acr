@@ -65,6 +65,26 @@ kubectl api-versions
 choco install git.install --Yes --confirm --accept-license
 
 ```
+### Git Troubleshoot
+
+[https://www.illuminiastudios.com/dev-diaries/ssh-on-windows-subsystem-for-linux](https://www.illuminiastudios.com/dev-diaries/ssh-on-windows-subsystem-for-linux)
+[https://help.github.com/en/enterprise/2.20/user/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent](https://help.github.com/en/enterprise/2.20/user/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+
+Check the fingerprint of you SSK key in GitHub with the SSH Key used by git.
+
+If your GIT repo URL starts with HTTPS (ex: "https://github.com/<!XXXyour-git-homeXXX!/spring-petclinic.git"), git CLI will always prompt for password.
+When MFA is enabled on GitHub and that you plan to use SSH Keys, you have to use: 
+git clone git@github.com:your-git-home/spring-petclinic.git
+
+```sh
+eval `ssh-agent -s`
+eval $(ssh-agent -s) 
+sudo service ssh status
+# sudo service ssh --full-restart
+ssh-add /home/~username/.ssh/githubkey
+ssh-keygen -l -E MD5 -f /home/~username/.ssh/githubkey
+ssh -T git@github.com
+```
 
 ## How to install AZ CLI with Chocolatey
 ```sh
@@ -190,13 +210,18 @@ source <(kubectl completion bash) # setup autocomplete in bash into the current 
 echo "source <(kubectl completion bash)" >> ~/.bashrc 
 alias k=kubectl
 complete -F __start_kubectl k
+
+source <(oc completion bash)
+echo "source <(oc completion bash)" >> ~/.bashrc 
+complete -F __start_oc oc
+
+alias kn='kubectl config set-context --current --namespace '
 ```
 
 Optionnaly : If you want to run PowerShell
 You can use Backtick ` to escape new Line in ISE
 
 ```sh
-alias kn='kubectl config set-context --current --namespace '
 # If you run kubectl in PowerShell ISE , you can also define aliases :
 function k([Parameter(ValueFromRemainingArguments = $true)]$params) { & kubectl $params }
 function kubectl([Parameter(ValueFromRemainingArguments = $true)]$params) { Write-Output "> kubectl $(@($params | ForEach-Object {$_}) -join ' ')"; & kubectl.exe $params; }
