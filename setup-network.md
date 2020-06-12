@@ -18,7 +18,7 @@ See  :
 
 ```sh
 # AKS nodes VNet & Subnet
-az network vnet create --name $vnet_name --resource-group $rg_name --address-prefixes 172.16.0.0/22 --location $location
+az network vnet create --name $vnet_name --resource-group $rg_name --address-prefixes 172.16.0.0/21 --location $location
 az network vnet subnet create --name $master_subnet_name --address-prefixes 172.16.1.0/24 --vnet-name $vnet_name --resource-group $rg_name --service-endpoints Microsoft.ContainerRegistry
 az network vnet subnet create --name $worker_subnet_name --address-prefixes 172.16.2.0/24 --vnet-name $vnet_name -g $rg_name --service-endpoints Microsoft.ContainerRegistry
 
@@ -31,6 +31,9 @@ echo "Master Subnet Id :" $master_subnet_id
 worker_subnet_id=$(az network vnet subnet show --name $worker_subnet_name --vnet-name $vnet_name -g $rg_name --query id -o tsv)
 echo "Worker Subnet Id :" $worker_subnet_id	
 
+gway_subnet_id=$(az network vnet subnet create --name GatewaySubnet --address-prefixes 172.16.3.0/24 --vnet-name $vnet_name -g $rg_name  --query id -o tsv)
+echo "Gateway Subnet Id :" $gway_subnet_id	
+
 # https://docs.microsoft.com/en-us/azure/private-link/create-private-link-service-cli#disable-private-link-service-network-policies-on-subnet
 az network vnet subnet update --name $master_subnet_name --vnet-name $vnet_name --disable-private-link-service-network-policies true -g $rg_name
 
@@ -38,7 +41,7 @@ az network vnet subnet update --name $master_subnet_name --vnet-name $vnet_name 
 az network vnet subnet update --name $worker_subnet_name --vnet-name $vnet_name --disable-private-endpoint-network-policies true -g $rg_name
 
 # This is the subnet that will be used for Services that are exposed via an Internal Load Balancer (ILB). This mean the ILB internal IP will be from this subnet address space. By doing it this way we do not take away from the existing IP Address space in the AKS subnet that is used for Nodes and Pods.
-az network vnet subnet create --name $ilb_subnet_name --address-prefixes 172.16.3.0/24 --vnet-name $vnet_name -g $rg_name 
+az network vnet subnet create --name $ilb_subnet_name --address-prefixes 172.16.4.0/24 --vnet-name $vnet_name -g $rg_name 
 ilb_subnet_id=$(az network vnet subnet show --resource-group $rg_name --vnet-name  $vnet_name --name $ilb_subnet_name --query id -o tsv)
 echo "Internal Load BalancerLB Subnet Id :" $ilb_subnet_id	
 
