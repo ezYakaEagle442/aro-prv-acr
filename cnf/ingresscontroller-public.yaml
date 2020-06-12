@@ -1,0 +1,12 @@
+apiVersion: operator.openshift.io/v1
+kind: IngressController
+metadata:
+  generation: 1
+  name: ing-ctl-pub
+spec:
+  defaultCertificate:
+    name: 896faeca-8d55-44e7-b018-37d743a930b2-ingress
+  endpointPublishingStrategy:
+#    loadBalancer:
+#      scope: Internal
+    type: LoadBalancerService

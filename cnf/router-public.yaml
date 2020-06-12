@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+#  annotations:
+#    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  labels:
+    app: router
+    ingresscontroller.operator.openshift.io/owning-ingresscontroller: ing-ctl-pub
+    router: router-default
+  name: router-public
+spec:
+  externalTrafficPolicy: Local
+  healthCheckNodePort: 30545
+  ports:
+  - name: http
+    nodePort: 31253
+    port: 80
+    protocol: TCP
+    targetPort: http
+  - name: https
+    nodePort: 31600
+    port: 443
+    protocol: TCP
+    targetPort: https
+  selector:
+    ingresscontroller.operator.openshift.io/deployment-ingresscontroller: ing-ctl-pub
+  sessionAffinity: None
+  type: LoadBalancer
+status:
+  loadBalancer: {}

@@ -12,6 +12,9 @@ See :
 - [https://appdev.openshift.io/docs/getting-started.html](https://appdev.openshift.io/docs/getting-started.html)
 - [https://appdev.openshift.io/docs/spring-boot-runtime.html](https://appdev.openshift.io/docs/spring-boot-runtime.html)
 - [https://developers.redhat.com/blog/2020/06/02/how-the-fabric8-maven-plug-in-deploys-java-applications-to-openshift/](https://developers.redhat.com/blog/2020/06/02/how-the-fabric8-maven-plug-in-deploys-java-applications-to-openshift/)
+- [https://docs.openshift.com/aro/4/networking/ingress-operator.html](https://docs.openshift.com/aro/4/networking/ingress-operator.html)
+- [https://docs.openshift.com/aro/4/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes](https://docs.openshift.com/aro/4/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes)
+- [https://blog.cloudtrooper.net/2020/06/02/a-day-in-the-life-of-a-packet-in-azure-redhat-openshift-part-5](https://blog.cloudtrooper.net/2020/06/02/a-day-in-the-life-of-a-packet-in-azure-redhat-openshift-part-5)
 
 ## Pre-req
 
@@ -31,6 +34,7 @@ oc describe project $appName
 See :
 -  [https://docs.openshift.com/aro/4/builds/build-strategies.html#images-create-s2i_build-strategies](https://docs.openshift.com/aro/4/builds/build-strategies.html#images-create-s2i_build-strategies)
 - [Language Detection](https://docs.openshift.com/aro/4/applications/application_life_cycle_management/creating-applications-using-cli.html#language-detection)
+- [https://github.com/appuio/s2i-maven-java](https://github.com/appuio/s2i-maven-java)
 
 ```sh
 # https://catalog.redhat.com/software/containers/search?q=tomcat
@@ -68,11 +72,12 @@ do
 	oc logs $pod -n $appName | grep -i "Error"
     # oc exec $pod -n $appName -- wget http://localhost:8080/manage/health
     # oc exec $pod -n $appName -- wget http://localhost:8080/manage/info
-    # k exec $pod -n $appName -it -- /bin/sh #  yum install curl wget
+    # oc exec $pod -n $appName -it -- /bin/sh #  yum install curl wget
 done
 
 
-
+# oc create route edge testroute --path=/ --service=spring-petclinic
+# oc describe route testroute
 oc get svc
 # Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
 # # cannot use --load-balancer-ip='' with --generator=route/v1  # --external-ip=''
@@ -89,6 +94,15 @@ oc describe ep spring-petclinic
 
 app_route_url=$(oc get route spring-petclinic-route -o jsonpath="{.spec.host}")
 echo "App Route URL  : " $app_route_url
+
+oc get ingresscontroller -A
+oc describe ingresscontroller default -n openshift-ingress-operator
+
+oc get ingresscontroller/default -o json | jq '.spec' -n openshift-ingress-operator
+oc get ingresscontroller/default -n openshift-ingress-operator --export -o yaml > ingresscontroller-default.yaml
+
+oc get svc -n openshift-ingress 
+oc get svc router-default -n openshift-ingress --export -o yaml > router-default.yaml
 
 oc get images | grep -i "image-registry.openshift-image-registry.svc:5000/$appName/spring-petclinic"
 
@@ -131,16 +145,12 @@ git clone $git_url
 # https://hub.docker.com/_/microsoft-java-maven
 # https://hub.docker.com/_/microsoft-java-jre-headless
 # https://hub.docker.com/_/microsoft-java-jre
-# If you do not have a Dockerfile, you can create the sample below to run your dummy SpringBoot App.
-# WARNING: Image "mcr.microsoft.com/java/maven:11u7-zulu-debian10" runs as the 'root' user which may not be permitted by your cluster administrator
-artifact="spring-petclinic-2.2.0.BUILD-SNAPSHOT.jar"
-echo -e "FROM mcr.microsoft.com/java/maven:11u7-zulu-debian10\n"\
-"VOLUME /tmp \n"\
-"ADD target/${artifact} app.jar \n"\
-"RUN touch /app.jar \n"\
-"EXPOSE 8080 \n"\
-"ENTRYPOINT [\""java\"", \""-Djava.security.egd=file:/dev/./urandom\"", \""-jar\"", \""/app.jar\""] \n"\
-> Dockerfile
+# If you do not have a Dockerfile, you can look at https://github.com/ezYakaEagle442/spring-petclinic/blob/master/Dockerfile to run your dummy SpringBoot App.
+
+
+artifact="spring-petclinic-2.3.0.BUILD-SNAPSHOT.jar"
+# export APP=$artifact
+# envsubst < Dockerfile > Dockerfile
 
 git add Dockerfile
 git commit -m "added Dockerfile"
@@ -160,7 +170,7 @@ oc get ev -A | grep -i error
 
 # https://docs.openshift.com/aro/4/applications/application-health.html
 # oc set probe dc/spring-petclinic --readiness xxxxx
-oc set probe dc/spring-petclinic --liveness --get-url=http://:8080/manage
+oc set probe dc/spring-petclinic --liveness --get-url=http://:8080/actuator
 # oc set probe dc/spring-petclinic --remove --readiness --liveness
 
 oc logs -f bc/spring-petclinic
@@ -184,13 +194,11 @@ oc describe dc spring-petclinic
 for pod in $(oc get pods -n springboot -o custom-columns=:metadata.name)
 do
     # oc describe pod $pod -n springboot # | grep -i "Error"
-	oc logs $pod -n springboot | grep -i "Error"
-    # oc exec $pod -nspringboot -- wget http://localhost:8080/manage/health
-    # oc exec $pod -n springboot -- wget http://localhost:8080/manage/info
-    # k exec $pod -n springboot -it -- /bin/sh #  yum install curl wget
+	# oc logs $pod -n springboot | grep -i "Error"
+    # oc exec $pod -nspringboot -- curl http://localhost:8080/actuator/health
+    # oc exec $pod -n springboot -- curl http://localhost:8080/actuator/info
+    oc exec $pod -n springboot -it -- /bin/sh #  yum install curl wget
 done
-
-
 
 oc get svc
 oc expose svc/spring-petclinic --name=spring-petclinic-pub --generator="service/v2" --type=LoadBalancer --load-balancer-ip='' 
@@ -204,6 +212,11 @@ oc get ep
 oc describe ep spring-petclinic
 
 oc get images | grep -i "image-registry.openshift-image-registry.svc:5000/$appName/spring-petclinic"
+
+oc get ingresscontroller -A
+oc get ingresscontroller/default -o json | jq '.spec' -n openshift-ingress-operator
+oc get svc -n openshift-ingress 
+
 
 ```
 
@@ -251,14 +264,16 @@ mvn package # -DskipTests
 # Test the App
 # mvn spring-boot:run
 
-artifact="spring-petclinic-2.2.0.BUILD-SNAPSHOT.jar"
-echo -e "FROM mcr.microsoft.com/java/jre:11u7-zulu-alpine\n"\
+artifact="spring-petclinic-2.3.0.BUILD-SNAPSHOT.jar"
+
+echo -e "FROM mcr.microsoft.com/java/maven:11u7-zulu-debian10\n"\
 "VOLUME /tmp \n"\
 "ADD target/${artifact} app.jar \n"\
 "RUN touch /app.jar \n"\
 "EXPOSE 8080 \n"\
 "ENTRYPOINT [\""java\"", \""-Djava.security.egd=file:/dev/./urandom\"", \""-jar\"", \""/app.jar\""] \n"\
 > Dockerfile
+
 
 nslookup $acr_registry_name.azurecr.io
 docker_server=$(az acr show --name $acr_registry_name --resource-group $rg_name --query "loginServer" --output tsv)

@@ -18,7 +18,7 @@ See also :
 - [https://aka.ms/aroworkshop-devops](https://aka.ms/aroworkshop-devops)
 - [https://github.com/akamenev/aro-private](https://github.com/akamenev/aro-private)
 - [https://github.com/stuartatmicrosoft/azure-aro/blob/master/aro4-replace-pull-secret.sh](https://github.com/stuartatmicrosoft/azure-aro/blob/master/aro4-replace-pull-secret.sh)
-
+- [https://blog.cloudtrooper.net/2020/06/02/a-day-in-the-life-of-a-packet-in-azure-redhat-openshift-part-5](https://blog.cloudtrooper.net/2020/06/02/a-day-in-the-life-of-a-packet-in-azure-redhat-openshift-part-5)
 
 ## ToC
 
