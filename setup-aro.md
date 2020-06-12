@@ -5,6 +5,7 @@
 pull_secret=`cat pull-secret.txt`
 
 az provider show -n  Microsoft.RedHatOpenShift --query  "resourceTypes[?resourceType == 'OpenShiftClusters']".locations 
+curl -sSL aka.ms/where/aro | bash
 
 az aro create \
   --name $cluster_name \
@@ -41,10 +42,13 @@ echo "ARO Service Principal Name: " $aro_spn
 managed_rg=$(az aro show -n $cluster_name -g $rg_name --query 'clusterProfile.resourceGroupId' -o tsv)
 echo "ARO Managed Resource Group : " $managed_rg
 
+aro_cluster_id=$(az aro show -n $cluster_name -g $rg_name --query 'id' -o tsv)
+echo "ARO Cluster Resource ID : " $aro_cluster_id
+
 managed_rg_name=`echo -e $managed_rg | cut -d  "/" -f5`
 echo "ARO RG Name" $managed_rg_name
 
-cat ~/.azure/accessTokens.json
+# cat ~/.azure/accessTokens.json
 # You can have a look at the App. Registrations in the portal at https://ms.portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps
 
 ```
@@ -83,6 +87,8 @@ echo "source <(oc completion bash)" >> ~/.bashrc
 oc login $aro_api_server_url -u $aro_usr -p $aro_pwd
 oc whoami
 oc cluster-info
+
+oc describe ingresscontroller default -n openshift-ingress-operator
 
 ```
 
