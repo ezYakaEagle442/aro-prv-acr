@@ -1,9 +1,16 @@
 
 See :
 
+- [https://azure.microsoft.com/en-us/blog/vnet-peering-and-vpn-gateways](https://azure.microsoft.com/en-us/blog/vnet-peering-and-vpn-gateways)
 - [https://docs.microsoft.com/fr-fr/cli/azure/network/local-gateway?view=azure-cli-latest#az-network-local-gateway-create]()
 - [https://docs.microsoft.com/fr-fr/azure/storage/files/storage-files-configure-p2s-vpn-linux](https://docs.microsoft.com/fr-fr/azure/storage/files/storage-files-configure-p2s-vpn-linux)
 - [https://docs.microsoft.com/en-us/azure/vpn-gateway/point-to-site-about](https://docs.microsoft.com/en-us/azure/vpn-gateway/point-to-site-about)
+- [https://docs.microsoft.com/en-us/azure/vpn-gateway/point-to-site-about#authenticate-using-native-azure-certificate-authentication](https://docs.microsoft.com/en-us/azure/vpn-gateway/point-to-site-about#authenticate-using-native-azure-certificate-authentication)
+
+When using the native Azure certificate authentication, a client certificate that is present on the device is used to authenticate the connecting user. Client certificates are generated from a trusted root certificate and then installed on each client computer. You can use a root certificate that was generated using an Enterprise solution, or you can generate a self-signed certificate.
+
+The validation of the client certificate is performed by the VPN gateway and happens during establishment of the P2S VPN connection. The root certificate is required for the validation and must be uploaded to Azure.
+
 ```sh
 
 # "CN=mycompany.com,OU=IT,O=mycompany.com,L=Paris,ST=IDF,C=FR,emailAddress=DevOps-KissMyApp@groland.grd"
@@ -43,7 +50,7 @@ openssl pkcs12 -in "clientCert.pem" -inkey "clientKey.pem" -certfile rootCert.pe
 vpnName="AlphaVpnGateway"
 vpnPublicIpAddressName="$vpnName-PublicIP"
 
-publicIpAddress=$(  \
+publicIpAddress=$(az network public-ip create \
     --resource-group $rg_name \
     --name $vpnPublicIpAddressName \
     --location $location \
@@ -79,6 +86,8 @@ az network vnet-gateway root-cert create \
     --public-cert-data $rootCertificate \
     --output none
 
+publicIp=$(az network public-ip show --name $vpnPublicIpAddressName -g $rg_name --query ipAddress)
+echo "VPN Gateway publicIp " $publicIp 
 
 # https://docs.microsoft.com/fr-fr/cli/azure/network/vnet-gateway/vpn-client?view=azure-cli-latest#az-network-vnet-gateway-vpn-client-generate
 vpnClient=$(az network vnet-gateway vpn-client generate \
@@ -97,6 +106,28 @@ routes=$(xmllint --xpath "string(/VpnProfile/Routes)" Generic/VpnSettings.xml)
 echo "vpnServer " $vpnServer
 echo "vpnType " $vpnType
 echo "routes " $routes
+
+sudo cp "${installDir}ipsec.conf" "${installDir}ipsec.conf.backup"
+sudo cp "Generic/VpnServerRoot.cer" "${installDir}ipsec.d/cacerts"
+sudo cp "${username}.p12" "${installDir}ipsec.d/private" 
+
+echo -e "\nconn $vnet_name" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\tkeyexchange=$vpnType" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\ttype=tunnel" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\tleftfirewall=yes" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\tleft=%any" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\tleftauth=eap-tls" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\tleftid=%client" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\tright=$vpnServer" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\trightid=%$vpnServer" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\trightsubnet=$routes" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+echo -e "\tleftsourceip=%config" | sudo tee -a "${installDir}ipsec.conf" > /dev/null 
+echo -e "\tauto=add" | sudo tee -a "${installDir}ipsec.conf" > /dev/null
+
+echo ": P12 client.p12 '$password'" | sudo tee -a "${installDir}ipsec.secrets" > /dev/null
+
+sudo ipsec restart
+sudo ipsec up $vnet_name 
 
 # az network local-gateway create -g MyResourceGroup -n MyLocalGateway \
 #     --gateway-ip-address 23.99.221.164 --local-address-prefixes 10.0.0.0/24 20.0.0.0/24
