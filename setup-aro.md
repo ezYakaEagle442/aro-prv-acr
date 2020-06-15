@@ -347,7 +347,7 @@ az storage account network-rule add --action allow --account-name $aro_registry_
 
 jumpoff_management_subnet_id=$(az network vnet subnet show --name ManagementSubnet --vnet-name $vnet_bastion_name -g $rg_bastion_name --query id -o tsv)
 echo "Bastion Subnet Id :" $jumpoff_management_subnet_id	
-az storage account network-rule add --action allow --account-name $aro_registry_blob_str_name --subnet $jumpoff_management_subnet_id  -g $rg_name
+az storage account network-rule add --action allow --account-name $aro_registry_blob_str_name --subnet $jumpoff_management_subnet_id -g $rg_name
 
 # Define your own IP range
 #AUTHORIZED_IP_RANGE="176.134.171.0-176.134.171.255" # 176.134.171.0/24 | 172.16.2.0/24 | 192.168.1.0/24 | 192.168.0.0-192.168.7.255
