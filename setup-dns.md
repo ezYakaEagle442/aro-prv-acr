@@ -28,6 +28,8 @@ In [this sample](https://docs.microsoft.com/en-us/azure/storage/files/storage-fi
 - Setup a VM with --image Win2019Datacenter to create a DNS server in the ARO VNet (where there is the Storage PE) as describe in the abobe sample
 - Setup CoreDNS on an Ubuntu VM bind to the VNet IP of the VM, using the  [Forward Plugin](https://coredns.io/plugins/forward)
 
+![DNS-Forwarder Architecture](./img/DNS-Forwarder.png)
+
 
 # Setup NSG 
 

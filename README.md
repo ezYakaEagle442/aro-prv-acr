@@ -1,4 +1,4 @@
-# ARO Private cluster &amp; ACR with Private-Endpoint
+# ARO Private cluster &amp; Private-Endpoint
 
 ## Introduction
 This is an introduction to play with ARO Private cluster and :
@@ -32,5 +32,9 @@ See also :
    1. Setup [Network](setup-network.md)
    <!-- Create [SSH Keys](setup-prereq.md#generates-your-ssh-keys) -->
 1. Setup [ARO cluster](setup-aro.md)
+1. Setup [Point-to-Site connection](setup-vpn-gateway.md)
+1. Setup [DNS-Forwarder](setup-dns.md)
 1. Setup [HELM](setup-helm.md)
 1. Setup [ACR](setup-acr.md)
+
+![ARO Architecture](./img/ARO_Architecture.png)
