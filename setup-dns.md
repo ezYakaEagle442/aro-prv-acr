@@ -5,7 +5,10 @@ See :
 - [https://docs.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16](https://docs.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16)
 - [https://docs.microsoft.com/en-us/azure/aks/private-clusters#hub-and-spoke-with-custom-dns](https://docs.microsoft.com/en-us/azure/aks/private-clusters#hub-and-spoke-with-custom-dns)
 - [https://docs.microsoft.com/en-us/azure/storage/files/storage-files-networking-dns#manually-configuring-dns-forwarding](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-networking-dns#manually-configuring-dns-forwarding)
-- []()
+- [https://coredns.io/manual/toc](https://coredns.io/manual/toc)
+- [https://github.com/coredns/coredns/blob/master/corefile.5.md](https://github.com/coredns/coredns/blob/master/corefile.5.md)
+- [https://coredns.io/2017/07/23/corefile-explained](https://coredns.io/2017/07/23/corefile-explained)
+- [https://wiki.archlinux.org/index.php/CoreDNS](https://wiki.archlinux.org/index.php/CoreDNS)
 
 Every storage account has a fully qualified domain name (FQDN). For the public cloud regions, this FQDN follows the pattern storageaccount.blob.core.windows.net where storageaccount is the name of the storage account. When you make requests against this name, your OS performs a DNS lookup to resolve the fully qualified domain name to an IP address which it can use to send the requests to.
 
@@ -21,22 +24,12 @@ This guide shows the steps for configuring DNS forwarding for the Azure storage 
  The conditional forwarding must be made to the recommended public DNS zone forwarder. For example: database.windows.net instead of privatelink.database.windows.net.
 
 
-In [this sample](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-networking-dns#manually-configuring-dns-forwarding) , The [PowerShell snippet uses CommandLet from dnsserver Module](https://docs.microsoft.com/en-us/powershell/module/dnsserver/?view=win10-ps) which is not avialble neither on WSL neither on Windows 10, so then you have 2 options :
-- Setup a VM with --image Win2019Datacenter to create a DNS server in the ARO VNet (where there is the Storage PE) as describe in the docs
-- setup CoreDNS on an Ubuntu VM bind to the VNet IP of the VM
-- [https://coredns.io/plugins/forward](https://coredns.io/plugins/forward)
-. {
-    bind 172.16.2.5
-    forward . 168.63.129.16
-    log
-    errors
-    cache
-}
+In [this sample](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-networking-dns#manually-configuring-dns-forwarding) , The [PowerShell snippet uses CommandLet from dnsserver Module](https://docs.microsoft.com/en-us/powershell/module/dnsserver/?view=win10-ps) which is not available neither on WSL neither on Windows 10, so then you have 2 options :
+- Setup a VM with --image Win2019Datacenter to create a DNS server in the ARO VNet (where there is the Storage PE) as describe in the abobe sample
+- Setup CoreDNS on an Ubuntu VM bind to the VNet IP of the VM, using the  [Forward Plugin](https://coredns.io/plugins/forward)
 
 
-
-
-### Setup NSG 
+# Setup NSG 
 
 The ARO RG is locked, it is not possible to modify resources in it ...
 ```sh
@@ -49,13 +42,6 @@ az network nsg show --id $worker_nsg_id -g $rg_name
 
 worker_nsg_name=$(az network nsg show --id $worker_nsg_id  --query 'name' -o tsv)
 echo "Worker NSG Name :" $worker_nsg_name	
-
-# az network nsg update --id $worker_nsg_id -g $rg_name
-
-# https://github.com/Azure/azure-quickstart-templates/tree/master/101-azure-bastion-nsg
-# https://docs.microsoft.com/en-us/azure/bastion/bastion-nsg
-# NSG sample : https://user-images.githubusercontent.com/47132998/69514141-4f55d380-0f70-11ea-980e-2094bd57de20.png
-# https://github.com/Azure/azure-quickstart-templates/blob/master/101-azure-bastion-nsg/azuredeploy.json
 
 dnsf_nsg="dnsf-nsg-management"
 az network nsg create --name $dnsf_nsg -g $rg_name --location $location
@@ -70,16 +56,11 @@ az network vnet subnet update --name $worker_subnet_name --network-security-grou
 
 ```
 
-### Create a JumpBox VM
+# Create a JumpBox VM
 
 See
 - [https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes)
 - [https://docs.microsoft.com/en-us/azure/virtual-machines/linux/sizes](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/sizes)
-
-[Your SSH keys should have been generated at pre-req step](./setup-prereq#generates-your-ssh-keys)
-
-
-<span style="color:red">/!\ IMPORTANT </span> : If you create a Linux JumpOff you will not have access to the ARO console, you may pefer to use a Windows JumpOff instead.
 
 ```sh
 # az vm list-sizes --location $location --output table
@@ -135,26 +116,22 @@ echo "Network Interface public  IP :" $network_interface_pub_ip
 # test from JumpOff
 ssh -i ~/.ssh/$ssh_key $dnsf_admin_username@$network_interface_pub_ip
 
+```
 
-https://coredns.io/manual/toc
-https://github.com/coredns/coredns/blob/master/corefile.5.md
-https://coredns.io/2017/07/23/corefile-explained/
-https://wiki.archlinux.org/index.php/CoreDNS
+# Setup CoreDNS
 
-
- /etc/coredns/Corefile ,
-
-
+```sh
 wget https://github.com/coredns/coredns/releases/download/v1.6.9/coredns_1.6.9_linux_amd64.tgz
 tar zxvf coredns_1.6.9_linux_amd64.tgz
 ls -al
 chmod +x coredns
 ./coredns -version
 
+# /etc/coredns/Corefile
 vim Corefile
 
 .:53 {
-    bind 172.16.2.5
+    bind 172.16.2.5 # Private IP ov the DNS server VM
     forward . 168.63.129.16
     log
     errors
@@ -169,68 +146,20 @@ sudo ./coredns -dns.port=53
 ./coredns -dns.port=1053
 
 
+```
 
-
-Then to modify DNS on your Windows 10 client :
+# Modify DNS on your Windows 10 client :
 
 - [https://www.lifewire.com/how-to-change-dns-servers-in-windows-2626242](https://www.lifewire.com/how-to-change-dns-servers-in-windows-2626242)
 
+```sh
 From CMD as admin
 netsh and press Enter
 netsh> prompt, type interface ip show config, then press Enter
-interface ip set dns "Ethernet0" static 8.8.8.8 and press Enter. Replace Ethernet0 with the name of your connection and 8.8.8.8 with the DNS server you want to use.
+interface ip set dns "Ethernet0" static 172.16.2.5 and press Enter. Replace Ethernet0 with the name of your connection and 172.16.2.5 with the DNS server you want to use.
 
 - [https://pureinfotech.com/change-dns-windows-10/](https://pureinfotech.com/change-dns-windows-10/)
 Get-NetIPConfiguration
-Set-DnsClientServerAddress -InterfaceIndex 8 -ServerAddresses 192.168.1.254, 8.8.8.8
-
-```sh
-sudo apt-get update
-
-
-sudo nano /etc/default/bind9
-# OPTIONS="-u bind -4"
-
-# sudo systemctl restart bind9
-sudo service bind9 restart
-sudo vim /etc/bind/named.conf.options
-options {
-        directory "/var/cache/bind";
-        forwarders {
-                8.8.8.8;
-                168.63.129.16;
-        };
-        dnssec-validation auto;
-        auth-nxdomain no;    # conform to RFC1035
-        listen-on-v6 { any; };
-};
-
-# Get the IP
-# ip addr show eth3 | grep -i inet
-# ifconfig -a
-# hostname -I
-# host myip.opendns.com resolver1.opendns.com | grep "myip.opendns.com has address"
-# myip=$(dig +short myip.opendns.com @resolver1.opendns.com)
-
-
-sudo vim /etc/bind/named.conf.local
-
-zone "privatelink.blob.core.windows.net" {
-    type master;
-    file "/etc/bind/zones/privatelink.blob.core.windows.net"; # zone file path
-    allow-transfer {192.168.1.39; }; # ns2 private IP address - secondary
-};
-
-sudo service bind9 restart
-
-sudo dnsmasq --clear-on-reload
-nslookup ${aro_registry_blob_str_name}.blob.core.windows.net
-
-# Define your own IP range
-#AUTHORIZED_IP_RANGE="176.134.171.0-176.134.171.255" # 176.134.171.0/24 | 172.16.2.0/24 | 192.168.1.0/24 | 192.168.0.0-192.168.7.255
-AUTHORIZED_IP_RANGE=176.134.171.0/24 # 176.134.171.92
-az storage account network-rule add --action allow --ip-address $AUTHORIZED_IP_RANGE --account-name $aro_registry_blob_str_name -g $rg_name
-az storage account network-rule list --account-name $aro_registry_blob_str_name 
-
+Set-DnsClientServerAddress -InterfaceIndex 8 -ServerAddresses 192.168.1.254, 172.16.2.5
 
 ```
