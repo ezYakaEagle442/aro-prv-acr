@@ -48,6 +48,12 @@ win_vm_admin_pwd="??? CHANGE THIS ADMIN Password !!!"
 ssh_passphrase="<your secret>"
 ssh_key="${appName}-key" # id_rsa
 
+dnsf_name="dns-forwarder"
+echo "DNS-Forwarder server name is : " $dnsf_name 
+
+dnsf_admin_username="dnsf_admin"
+echo "DNS-Forwarder admin user name is : " $dnsf_admin_username 
+
 # Storage account name must be between 3 and 24 characters in length and use numbers and lower-case letters only
 storage_name="stwe""${appName,,}"
 echo "Storage name:" $storage_name
