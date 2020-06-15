@@ -43,6 +43,66 @@ choco install wsl-ubuntu-1804 --Yes --confirm --accept-license --verbose
 
 ```
 
+## Upgrade to to WSL 2
+See [https://docs.microsoft.com/en-us/windows/wsl/install-win10#update-to-wsl-2](https://docs.microsoft.com/en-us/windows/wsl/install-win10#update-to-wsl-2)
+Pre-req: Windows 10, updated to version 2004, **Build 19041** or higher.
+
+```sh
+
+
+```
+
+## Setup PowerShell in WSL
+See :
+- [https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7#ubuntu-1804](https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7#ubuntu-1804)
+- [https://www.saggiehaim.net/powershell/install-powershell-7-on-wsl-and-ubuntu](https://www.saggiehaim.net/powershell/install-powershell-7-on-wsl-and-ubuntu)
+
+https://github.com/PowerShell/PowerShell/blob/master/docs/building/linux.md
+
+```sh
+# Download the Microsoft repository GPG keys
+wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
+
+# Register the Microsoft repository GPG keys
+sudo dpkg -i packages-microsoft-prod.deb
+
+# Update the list of products
+sudo apt-get update
+
+# Enable the "universe" repositories
+sudo add-apt-repository universe
+
+# Install PowerShell
+sudo apt-get install -y powershell
+
+# restart WSL
+pwsh
+
+Get-PSRepository
+Install-Module -Name Az
+
+# Create Folder
+# sudo mkdir /usr/share/PowerShell
+# Change Working Dir
+cd /usr/share/PowerShell
+
+# https://github.com/PowerShell/PowerShell/releases/tag/v6.1.5
+# sudo wget https://github.com/PowerShell/PowerShell/releases/download/v7.0.0-rc.2/powershell-7.0.0-rc.2-linux-x64.tar.gz
+# sudo wget https://github.com/PowerShell/PowerShell/releases/download/v6.1.5/powershell-6.1.5-linux-alpine-x64.tar.gz
+# sudo tar xzvf powershell-6.1.5-linux-alpine-x64.tar.gz
+# sudo rm /usr/share/PowerShell/powershell-6.1.5-linux-alpine-x64.tar.gz
+
+cd #HOME
+ 
+# Edit the .profile file
+vim .profile # PATH="$PATH:/usr/share/PowerShell"
+
+# restart WSL
+pwsh
+
+```
+
+
 ## How to install tools into Subsystem for Linux (WSL)
 
 ```sh
