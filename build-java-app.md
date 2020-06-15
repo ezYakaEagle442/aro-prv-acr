@@ -15,6 +15,8 @@ See :
 - [https://docs.openshift.com/aro/4/networking/ingress-operator.html](https://docs.openshift.com/aro/4/networking/ingress-operator.html)
 - [https://docs.openshift.com/aro/4/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes](https://docs.openshift.com/aro/4/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes)
 - [https://blog.cloudtrooper.net/2020/06/02/a-day-in-the-life-of-a-packet-in-azure-redhat-openshift-part-5](https://blog.cloudtrooper.net/2020/06/02/a-day-in-the-life-of-a-packet-in-azure-redhat-openshift-part-5)
+- [https://medium.com/@subhaseenivasan476/deploying-web-applications-in-openshift-using-fabric8-maven-plugin-86c8fe11446b](https://medium.com/@subhaseenivasan476/deploying-web-applications-in-openshift-using-fabric8-maven-plugin-86c8fe11446b)
+- [https://zoltanaltfatter.com/2019/07/07/spring-boot-app-on-openshift](https://zoltanaltfatter.com/2019/07/07/spring-boot-app-on-openshift)
 
 ## Pre-req
 
@@ -163,7 +165,13 @@ oc describe namespace springboot
 oc get ns --show-labels
 kn springboot
 
-oc new-app mcr.microsoft.com/java/maven:11u7-zulu-debian10~$git_url --context-dir="/" --strategy=Docker
+oc new-app mcr.microsoft.com/java/maven:11u7-zulu-debian10~$git_url --context-dir="/" --strategy=Docker \
+    --build-env STORE_TYPE="pkcs12" \
+    --build-env SYS_STOREPASS="nopass" \
+    --build-env NEW_STOREPASS="KEY_KiP@ss101!" \
+    --build-env DN="CN=mybigcompany.com,OU=IT,O=mybigcompany.com,L=Paris,ST=IDF,C=FR,emailAddress=DevOps-KissMyApp@groland.grd"  \
+    --build-env SAN="mybigcompany.com"
+
 oc status --suggest
 
 oc get ev -A | grep -i error

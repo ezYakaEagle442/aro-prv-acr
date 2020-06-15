@@ -10,3 +10,16 @@ spec:
 #    loadBalancer:
 #      scope: Internal
     type: LoadBalancerService
+
+
+# From Jose
+apiVersion: operator.openshift.io/v1
+kind: IngressController
+metadata:
+  namespace: openshift-ingress-operator
+  name: external
+spec:
+  domain: extapps.chyrswm9.northeurope.aroapp.io 
+  namespaceSelector:
+    matchLabels:
+      type: external
