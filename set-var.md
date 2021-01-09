@@ -6,6 +6,7 @@
 ```sh
 
 az provider show -n  Microsoft.RedHatOpenShift --query  "resourceTypes[?resourceType == 'OpenShiftClusters']".locations 
+curl -sSL aka.ms/where/aro | bash
 
 # az account list-locations : francecentral | northeurope | westeurope | eastus2
 location=westeurope 

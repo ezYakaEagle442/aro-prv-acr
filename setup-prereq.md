@@ -2,6 +2,8 @@
 ```sh
 az group create --name $rg_name --location $location
 # az group create --name rg-cloudshell-$location --location $location
+# az account list-locations | grep "france"
+# az aks get-versions -o table --location france-central
 
 ```
 
@@ -16,6 +18,20 @@ az storage account create --name stcloudshellwe --kind StorageV2 --sku Standard_
 # az storage account create --name $storage_name --kind StorageV2 --sku Standard_LRS --resource-group $rg_name --location $location --https-only true
 
 ```
+
+# Ensure you have the appropriate Roles to be allowed to create a Service Principal
+
+[az ad group create CLI](https://docs.microsoft.com/en-us/cli/azure/ad/group?view=azure-cli-latest#az_ad_group_create)
+[az ad user create CLI](https://docs.microsoft.com/en-us/cli/azure/ad/user?view=azure-cli-latest#az_ad_user_create)
+[az ad group member add CLI](https://docs.microsoft.com/en-us/cli/azure/ad/group/member?view=azure-cli-latest#az_ad_group_member_add)
+[az role assignment create CLI](https://docs.microsoft.com/en-us/cli/azure/role/assignment?view=azure-cli-latest#az_role_assignment_create)
+
+[Application Administrator permission](https://docs.microsoft.com/en-us/azure/active-directory/roles/permissions-reference#application-administrator-permissions)
+- microsoft.directory/servicePrincipals/create
+- microsoft.directory/applications/create
+- microsoft.directory/appRoleAssignments/create
+
+You could add roles to a Group, this is in PREVIEW in the [Portal](https://docs.microsoft.com/en-us/azure/active-directory/roles/groups-concept#required-license-plan) but this feature requires you to have an available Azure AD Premium P1 license in your Azure AD organization.
 
 # Get a Red Hat pull secret
 

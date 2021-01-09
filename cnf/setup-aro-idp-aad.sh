@@ -5,6 +5,14 @@
 #
 # Updated by Steve (aka Pinpin ! see https://github.com/ezYakaEagle442/aro-prv-acr)
 #
+# see https://docs.microsoft.com/en-us/azure/openshift/configure-azure-ad-ui
+# see https://docs.openshift.com/aro/4/authentication/identity_providers/configuring-oidc-identity-provider.html
+#
+# Applications registered in an Azure Active Directory (Azure AD) tenant are, by default, available to all users of the tenant who authenticate successfully.
+# Azure AD allows tenant administrators and developers to restrict an app to a specific set of users or security groups in the tenant.
+# https://docs.microsoft.com/en-us/azure/openshift/configure-azure-ad-ui#assign-users-and-groups-to-the-cluster-optional 
+# https://docs.microsoft.com/en-us/azure/active-directory/manage-apps/grant-admin-consent#grant-admin-consent-from-the-azure-portal
+# 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
 # NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 # IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,

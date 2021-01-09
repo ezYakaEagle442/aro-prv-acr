@@ -24,7 +24,7 @@ See :
 oc config current-context
 oc status
 oc projects
-oc new-project $appName --description="On-Prem Jenkins to build and push Docker image to ARO Built-in Registry configured with a NEW BLOB Stoarge+Private-Endpoint" --display-name="ARO PoC"
+oc new-project $appName --description="On-Prem Jenkins to build and push Docker image to ARO Built-in Registry configured with a NEW BLOB Storage+Private-Endpoint" --display-name="ARO PoC"
 oc get ns $appName
 oc get project $appName
 oc describe project $appName
@@ -37,6 +37,7 @@ See :
 -  [https://docs.openshift.com/aro/4/builds/build-strategies.html#images-create-s2i_build-strategies](https://docs.openshift.com/aro/4/builds/build-strategies.html#images-create-s2i_build-strategies)
 - [Language Detection](https://docs.openshift.com/aro/4/applications/application_life_cycle_management/creating-applications-using-cli.html#language-detection)
 - [https://github.com/appuio/s2i-maven-java](https://github.com/appuio/s2i-maven-java)
+- [https://www.openshift.com/blog/pushing-application-images-to-an-external-registry](https://www.openshift.com/blog/pushing-application-images-to-an-external-registry)
 
 ```sh
 # https://catalog.redhat.com/software/containers/search?q=tomcat
@@ -165,11 +166,12 @@ oc describe namespace springboot
 oc get ns --show-labels
 kn springboot
 
+# warning: --build-env no longer accepts comma-separated lists of values
 oc new-app mcr.microsoft.com/java/maven:11u7-zulu-debian10~$git_url --context-dir="/" --strategy=Docker \
     --build-env STORE_TYPE="pkcs12" \
-    --build-env SYS_STOREPASS="nopass" \
+    --build-env SYS_STOREPASS="changeit" \
     --build-env NEW_STOREPASS="KEY_KiP@ss101!" \
-    --build-env DN="CN=mybigcompany.com,OU=IT,O=mybigcompany.com,L=Paris,ST=IDF,C=FR,emailAddress=DevOps-KissMyApp@groland.grd"  \
+    --build-env DN=\""CN=mybigcompany.com,OU=IT,O=mybigcompany.com,L=Paris,ST=IDF,C=FR,emailAddress=DevOps-KissMyApp@groland.grd\""  \
     --build-env SAN="mybigcompany.com"
 
 oc status --suggest
@@ -178,7 +180,7 @@ oc get ev -A | grep -i error
 
 # https://docs.openshift.com/aro/4/applications/application-health.html
 # oc set probe dc/spring-petclinic --readiness xxxxx
-oc set probe dc/spring-petclinic --liveness --get-url=http://:8080/actuator
+oc set probe dc/spring-petclinic --liveness --get-url=https://:8443/actuator/health
 # oc set probe dc/spring-petclinic --remove --readiness --liveness
 
 oc logs -f bc/spring-petclinic
@@ -203,8 +205,8 @@ for pod in $(oc get pods -n springboot -o custom-columns=:metadata.name)
 do
     # oc describe pod $pod -n springboot # | grep -i "Error"
 	# oc logs $pod -n springboot | grep -i "Error"
-    # oc exec $pod -nspringboot -- curl http://localhost:8080/actuator/health
-    # oc exec $pod -n springboot -- curl http://localhost:8080/actuator/info
+    # oc exec $pod -nspringboot -- curl https://localhost:8443/actuator/health --insecure
+    # oc exec $pod -n springboot -- curl https://localhost:8443/actuator/info --insecure
     oc exec $pod -n springboot -it -- /bin/sh #  yum install curl wget
 done
 
@@ -257,6 +259,8 @@ See :
 See :
 - [https://docs.openshift.com/aro/4/builds/creating-build-inputs.html#builds-docker-credentials-private-registries_creating-build-inputs](https://docs.openshift.com/aro/4/builds/creating-build-inputs.html#builds-docker-credentials-private-registries_creating-build-inputs)
 - [Docker Push to ACR](https://docs.openshift.com/aro/4/builds/managing-build-output.html#builds-docker-source-build-output_managing-build-output)
+- [https://www.openshift.com/blog/pushing-application-images-to-an-external-registry](https://www.openshift.com/blog/pushing-application-images-to-an-external-registry)
+
 
 ## Create Docker Image
 ```sh

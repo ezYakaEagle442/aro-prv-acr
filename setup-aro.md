@@ -71,6 +71,8 @@ See [https://docs.microsoft.com/en-us/azure/openshift/tutorial-connect-cluster#i
 ```sh
 cd ~
 
+# wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz
+
 aro_download_url=${aro_console_url/console/downloads}
 echo "aro_download_url" $aro_download_url
 

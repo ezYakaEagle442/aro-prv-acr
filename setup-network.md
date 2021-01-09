@@ -17,7 +17,7 @@ See  :
 ## Create Networks
 
 ```sh
-# AKS nodes VNet & Subnet
+# ARO nodes VNet & Subnet
 az network vnet create --name $vnet_name --resource-group $rg_name --address-prefixes 172.16.0.0/21 --location $location
 az network vnet subnet create --name $master_subnet_name --address-prefixes 172.16.1.0/24 --vnet-name $vnet_name --resource-group $rg_name --service-endpoints Microsoft.ContainerRegistry
 az network vnet subnet create --name $worker_subnet_name --address-prefixes 172.16.2.0/24 --vnet-name $vnet_name -g $rg_name --service-endpoints Microsoft.ContainerRegistry
